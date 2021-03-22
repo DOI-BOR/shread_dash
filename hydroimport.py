@@ -5,14 +5,10 @@ Created on Wed Jan 15 16:35:45 2021
 """
 import pandas as pd
 import numpy as np
-import urllib.request
 import datetime as dt
 from datetime import timezone
-import time
-import pytz
 from requests import get as r_get
 from io import StringIO
-
 
 def import_rfc(site, dtype, rfc = "cbrfc", verbose=False):
     """Download NWS RFC flow data
@@ -174,7 +170,7 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
         if verbose==True:
             print("Added to dataframe")
 
-    print(site_triplet)
+    # print(site_triplet)
 
     # Return output dataframe
     return(data)
