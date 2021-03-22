@@ -22,11 +22,11 @@ from database import basin_list
 from database import start_date, end_date, forc_disable, dust_disable
 from database import snotel_list, usgs_list, csas_list
 from database import sloperange, elevrange, aspectdict, elevdict, slopedict
-from lib.utils import get_plot_config
 
-from lib.snow_plot import get_snow_plot
-from lib.met_plot import get_met_plot
-from lib.flow_plot import get_flow_plot
+from plot_lib.utils import get_plot_config
+from plot_lib.snow_plot import get_snow_plot
+from plot_lib.met_plot import get_met_plot
+from plot_lib.flow_plot import get_flow_plot
 
 app = database.app
 
