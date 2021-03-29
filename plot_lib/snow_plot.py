@@ -9,7 +9,7 @@ from database import snotel_gages, SBSP_iv, SBSP_dv, SASP_iv, SASP_dv
 from database import csas_gages, dust_ts, dust_layers
 from plot_lib.utils import screen_snodas, ba_snodas_stats
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
-from plot_lib.utils import plot_forecast
+from plot_lib.utils import shade_forecast
 
 def get_basin_stats(snodas_df):
     
@@ -40,7 +40,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     :param dtype: data type (dv/iv)
     :return: update figure
     """
-    
+    print(plot_dust)
     # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
 
@@ -167,7 +167,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
                 line=dict(color=dust_layers.loc[d, "color"],dash="dot"),
                 name=d))
 
-    fig.add_trace(plot_forecast(ymax))
+    fig.add_trace(shade_forecast(ymax))
     fig.update_layout(
         xaxis={'range': [start_date, end_date]},
         yaxis={'title': ylabel, 'type': 'linear', 'range': [0, ymax]},

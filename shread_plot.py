@@ -48,7 +48,7 @@ input_options = list()
 for p in presets.index:
     preset_options.append(dbc.DropdownMenuItem(presets.loc[p,"name"], id=p))
     input_options.append(Input(p,"n_clicks"))
-    
+
 def get_navbar():
     return dbc.Navbar(
         [
@@ -169,12 +169,12 @@ def get_layout():
                             ),
                             html.Div(html.P()),
                             dbc.Checkbox(
-                                id='plot_frcst',
+                                id='plot_forecast',
                             ),
                             dbc.Label(
                                 "Include Forecast Data",
                                 style=dict(marginLeft=10),
-                                html_for="plot_frcst",
+                                html_for="plot_forecast",
                             )
                         ]
                     )),
@@ -422,26 +422,53 @@ app.layout = get_layout()
     Output('csas_sel', 'disabled'),
     Output('plot_albedo_flow', 'disabled'),
     Output('plot_albedo_met', 'disabled'),
+    Output('plot_dust', 'disabled'),
+    #Output('csas_sel', 'value'),
+    #Output('plot_albedo_flow', 'checked'),
+    #Output('plot_albedo_met', 'checked'),
+    #Output('plot_dust', 'checked'),
     Output('csas_message', 'children'),
     [Input('date_selection', 'start_date'),
-     Input('date_selection', 'end_date'),]
+     Input('date_selection', 'end_date')]
 )
-def disable_csas(start_date,end_date):
+def disable_csas(start_date,end_date,csas_sel,plot_albedo_flow,plot_albedo_met,plot_dust):
     """
     :description: this function disables CSAS data for the current year...the csas website is too inconsistent to include.
     :param start_date: the start date selected
     :param end_date: the end date selected
-    :return: three booleans (True/False) for csas_sel, plot_albedo_flow and plot_albedo_met.
+    :return: series of booleans (True/False)
     """
     if (start_date>"2020-12-30") & (end_date>"2020-12-30"):
-        return(True,True,True,"CSAS data unavailable for 2021")
+        print("csas disabled.")
+        return(True,True,True,True,"CSAS data unavailable for 2021")
     else:
-        return(False,False,False,"")
+        return(False,False,False,False,"")
+
+@app.callback(
+    Output('plot_forecast', 'disabled'),
+    Output('plot_forecast', 'checked'),
+    [Input('date_selection', 'end_date'),
+     State('plot_forecast', 'checked')]
+)
+def disable_forecast(end_date,plot_forecast):
+    """
+    :description: this function disables forecast data if time window doesn't exctend to future.
+    :param end_date: the end date selected
+    :return: series of booleans (True/False)
+    """
+    end_date = dt.datetime.strptime(end_date, "%Y-%m-%d")
+    today = dt.datetime.now()
+    print(today)
+    if end_date<today:
+        print("forecasts disabled.")
+        return(True,False)
+    else:
+        return(False,plot_forecast)
 
 @app.callback(
     Output('basin', 'value'),
     Output('dtype', 'value'),
-    Output('plot_frcst', 'value'),
+    Output('plot_forecast', 'value'),
     Output('plot_albedo_flow', 'value'),
     Output('stype', 'value'),
     Output('plot_forc', 'value'),
@@ -463,6 +490,7 @@ def load_presets(a,b,c,d,e):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     id = changed_id.split(".")[0]
     print(changed_id)
+    print(id)
     if id not in presets.index:
         id = presets.index[0]
     # basins
@@ -502,8 +530,6 @@ def load_preset_dates(a,b,c,d,e,f,g,start,end):
     :return: user specified dates
     """
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    print(changed_id)
-
     if '2012_retro' in changed_id:
         start_date = "2012-02-01"
         end_date = "2012-02-15"
@@ -534,8 +560,8 @@ def load_preset_dates(a,b,c,d,e,f,g,start,end):
     return(start_date,end_date)
 
 @app.callback(
-    [Output('snow_plot', 'figure'),
-    Output('mean_elevation', 'children')],
+    Output('snow_plot', 'figure'),
+    Output('mean_elevation', 'children'),
     [
         Input('basin', 'value'),
         Input('stype', 'value'),
@@ -545,7 +571,7 @@ def load_preset_dates(a,b,c,d,e,f,g,start,end):
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('snotel_sel', 'value'),
-        Input('plot_dust', 'value'),
+        Input('plot_dust', 'checked'),
         Input('csas_sel', 'value'),
         Input('dtype', 'value')
     ])
@@ -562,7 +588,7 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     Output('met_plot', 'figure'),
     [
         Input('basin', 'value'),
-        Input('plot_forc', 'value'),
+        Input('plot_forc', 'checked'),
         Input('elevations', 'value'),
         Input('aspects', 'value'),
         Input('slopes', 'value'),
@@ -570,7 +596,7 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         Input('date_selection', 'end_date'),
         Input('snotel_sel', 'value'),
         Input('csas_sel','value'),
-        Input('plot_albedo_met','value'),
+        Input('plot_albedo_met','checked'),
         Input('dtype', 'value')
     ])
 def update_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date, 
@@ -587,17 +613,17 @@ def update_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     [
         Input('usgs_sel', 'value'),
         Input('dtype', 'value'),
-        Input('plot_frcst', 'value'),
+        Input('plot_forecast', 'checked'),
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('csas_sel','value'),
-        Input('plot_albedo_flow','value')
+        Input('plot_albedo_flow','checked')
     ])
-def update_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, 
+def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
                      csas_sel, plot_albedo):
 
     fig = get_flow_plot(
-        usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel, plot_albedo
+        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo
     )
     return fig
 

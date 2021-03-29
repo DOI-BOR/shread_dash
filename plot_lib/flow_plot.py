@@ -11,22 +11,23 @@ import dataretrieval.nwis as nwis
 from database import  SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, SBSG_dv, SBSG_iv
 from database import csas_gages, usgs_gages
 
-from plot_lib.utils import plot_forecast
+from plot_lib.utils import shade_forecast
 
-def get_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel,
+def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel,
                   plot_albedo):
     """
     :description: this function updates the flow plot
     :param usgs_sel: list of selected usgs sites ([])
     :param dtype: data type (dv/iv)
-    :param plot_frcst: boolean, plot forecast data (NWS-RFC)
+    :param plot_forecast: boolean, plot forecast data (NWS-RFC)
     :param start_date: start date (from date selector)
     :param end_date: end date (from date selector)
     :param csas_sel: list of selected csas sites ([])
     :param plot_albedo: boolean, plot albedo data for selected csas_sel
     :return: update figure
     """
-    
+    print(plot_albedo)
+    print(plot_forecast)
     # Based on data type (daily or instantaneous), flow data date index
     if dtype == "dv":
         dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
@@ -44,7 +45,7 @@ def get_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel,
         print("End Date is in future, flow observations will be imported until: " + str(usgs_end))
     else:
         usgs_end = dt.datetime.strftime(usgs_end, "%Y-%m-%d")
-        plot_frcst = []  # no forecast data needed if dates aren't displayed
+        plot_forecast = []  # no forecast data needed if dates aren't displayed
 
     # Create dataframes for data, names and rfc sites
     usgs_f_df = pd.DataFrame(index=dates)
@@ -53,7 +54,7 @@ def get_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel,
 
     for g in usgs_sel:
         name_df.loc[g, "name"] = str(g) + " " + str(usgs_gages.loc[usgs_gages["site_no"] == int(g), "name"].item())
-        if plot_frcst == True:
+        if plot_forecast == True:
             rfc_f_df.loc[g, "name"] = str(usgs_gages.loc[usgs_gages["site_no"] == int(g), "rfc"].item())
 
         try:
@@ -72,7 +73,7 @@ def get_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel,
         flow_in = usgs_f_df.merge(flow_in[parameter], left_index=True, right_index=True, how="left")
         usgs_f_df[g] = flow_in[parameter]
 
-    if plot_frcst == True:
+    if plot_forecast == True:
         print("Attempting to include forecast data")
         if dtype == "dv":
             forecast_begin = pytz.timezone("UTC").localize(dt.datetime.today())
@@ -152,7 +153,7 @@ def get_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel,
     if len(csas_sel) == 0:
         csas_f_max = np.nan
         csas_a_max = np.nan
-        print("No CSAS selected.")
+        print("No CSAS flow or albedo sites selected.")
     else:
         csas_f_max = csas_f_df.max().max()
         csas_a_max = np.nan
@@ -197,7 +198,7 @@ def get_flow_plot(usgs_sel, dtype, plot_frcst, start_date, end_date, csas_sel,
                 name=c+" 100% - Albedo",
                 yaxis="y2"))
 
-    fig.add_trace(plot_forecast(ymax))
+    fig.add_trace(shade_forecast(ymax))
 
     fig.update_layout(
         xaxis={'title': 'Date', 'range': [start_date, end_date]},

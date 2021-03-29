@@ -95,9 +95,9 @@ def ba_stats(input_df, dates):
 def ba_snodas_stats(df, dates):
 
     ba_df = df[['Date', 'mean']].groupby(
-        by='Date', 
-        sort=True, 
-        dropna=True
+        by='Date',
+        sort=True,
+        #dropna=True
     ).describe(percentiles=[0.05, 0.5, 0.95]).droplevel(0, axis=1)
 
     return ba_df
@@ -168,7 +168,7 @@ def ba_median_plot(ba_df,dlabel,color="black"):
         name="Median " + dlabel + " for selection"))
 
 # Function to plot forecast zone on figures
-def plot_forecast(ymax):
+def shade_forecast(ymax):
     return (go.Scatter(
         x=[dt.datetime.utcnow(), dt.datetime.now().date() + dt.timedelta(days=10)],
         y=[ymax, ymax],

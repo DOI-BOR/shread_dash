@@ -11,7 +11,7 @@ from database import csas_gages, moddrfs_forc
 
 from plot_lib.utils import screen, ba_stats
 from plot_lib.utils import ba_mean_plot, ba_median_plot
-from plot_lib.utils import plot_forecast
+from plot_lib.utils import shade_forecast
 
 def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date, 
                  end_date, snotel_sel, csas_sel, plot_albedo, dtype):
@@ -30,7 +30,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     :param dtype: data type (dv/iv)
     :return: update figure
     """
-    
+    print(plot_albedo)
    # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
     freeze = 32
@@ -155,7 +155,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     if len(csas_sel) == 0:
         csas_t_max = np.nan
         csas_a_max = np.nan
-        print("No CSAS selected.")
+        print("No CSAS meteorology sites selected.")
     else:
         csas_t_max = csas_t_df.max().max()
         csas_a_max = np.nan
@@ -253,7 +253,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
                 yaxis="y1"))
 
 
-    fig.add_trace(plot_forecast(ymax))
+    fig.add_trace(shade_forecast(ymax))
 
     fig.update_layout(
         margin={'l': 40, 'b': 40, 't': 0, 'r': 40},
