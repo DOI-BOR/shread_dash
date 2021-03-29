@@ -6,7 +6,7 @@ call cd ..\
 set root=.\hdb_env
 call %root%\Scripts\activate.bat
 call chdir %THIS_DIR%
-waitress-serve --port 448 SHREADpoints_dbc:app.server
+waitress-serve --port 448 shread_plot:app.server
 pause
 
 :GET_THIS_DIR
