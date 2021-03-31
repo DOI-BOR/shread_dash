@@ -13,7 +13,7 @@ from database import csas_gages, usgs_gages
 
 from plot_lib.utils import shade_forecast
 
-def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel,
+def get_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_date, csas_sel,
                   plot_albedo):
     """
     :description: this function updates the flow plot
@@ -162,8 +162,10 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
             csas_a_max = csas_a_df.max().max()
             # print("A")
             # print(csas_a_df)
-
-    ymax = np.nanmax([usgs_f_max,csas_f_max]) * 1.25
+    if flow_scale=="linear":
+        ymax = np.nanmax([usgs_f_max,csas_f_max]) * 1.25
+    else:
+        ymax = np.ceil(np.log10(np.nanmax([usgs_f_max,csas_f_max])))
 
     print("Updating flow plot...")
 
@@ -198,19 +200,32 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
                 name=c+" 100% - Albedo",
                 yaxis="y2"))
 
-    fig.add_trace(shade_forecast(ymax))
+    if flow_scale=="linear":
+        fig.add_trace(shade_forecast(ymax))
+    else:
+        fig.add_trace(shade_forecast(10**ymax))
 
     fig.update_layout(
-        xaxis={'title': 'Date', 'range': [start_date, end_date]},
         margin={'l': 40, 'b': 40, 't': 0, 'r': 45},
-        height=300,
-        legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(0,0,0,0)'},
+        height=400,
+        legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(255,255,255,0.8)'},
         hovermode='closest',
-        plot_bgcolor="white",
+        plot_bgcolor='white',
+        xaxis=dict(
+            range=[start_date, end_date],
+            showline=True,
+            linecolor="black",
+            mirror=True
+        ),
         yaxis=dict(
-        title='Flow (ft^3/s)',
-        side="left",
-        range=[0, ymax])
+            title='Flow (ft^3/s)',
+            side="left",
+            type=flow_scale,
+            range=[0.1, ymax],
+            showline=True,
+            linecolor="black",
+            mirror=True
+        )
     )
     if plot_albedo == True:
         fig.update_layout(

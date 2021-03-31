@@ -14,7 +14,7 @@ import os
 import time
 
 # Opens files, appends type, source and data and appends to dataframe
-def data_ingest(in_file):
+def data_ingest(in_file,drop_list):
     in_file_split = in_file.split("_")
 
     data_in = pd.read_csv(in_file)
@@ -22,6 +22,8 @@ def data_ingest(in_file):
     data_in["Source"] = in_file_split[0]
     data_in["Date"] = pd.to_datetime(in_file_split[2], format="%Y%m%d %H:%M:%S")
     data_in["File"] = in_file
+
+    data_in = data_in.drop(drop_list,axis=1)
 
     out_df = data_in
     out_df = out_df.reset_index()
@@ -35,11 +37,13 @@ this_dir = os.path.dirname(os.path.realpath(__file__))
 #this_dir = os.path.join("C://Users//tclarkin//Documents//GitHub//SHREAD_plot")
 os.chdir("C://Programs//SHREAD//data//database")  # Location of SHREAD data files
 database = os.path.join(this_dir, 'database')
+database = this_dir
 
 format = "points"
 overwrite = False
 verbose = False
-delete = True
+delete = False
+drop_list = ["max","min","median","Join_Count","TARGET_FID","pointid","grid_code"]
 
 # Define files in database
 start = time.time()
@@ -103,10 +107,10 @@ for source in sources:
         for in_file in in_files:
             if verbose == True:
                 print(in_file)
-            data = data_ingest(in_file)
+            data = data_ingest(in_file,drop_list)
             db = db.append(data,ignore_index=True)
 
-        db.to_csv(out_file)
+        db.to_csv(out_file,index=False)
         end = time.time()
         print("{} seconds to compile {} from {}.".format(round(end - start,1),type,source))
 
@@ -120,3 +124,15 @@ for source in sources:
                 os.remove(tif_file)
 
 print("Complete")
+
+# delete
+# import pandas as pd
+# for sensor in ["swe","snowdepth"]:
+#     db = pd.read_csv("database/snodas_{}_db.csv".format(sensor))
+#     for col in db.columns:
+#         if "Unnamed" in col:
+#             db = db.drop(col,axis=1)
+#         if col in drop_list:
+#             db = db.drop(col,axis=1)
+#
+#     db.to_csv("database/snodas_{}_db_rev.csv".format(sensor),index=False)

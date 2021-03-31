@@ -257,16 +257,22 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
 
     fig.update_layout(
         margin={'l': 40, 'b': 40, 't': 0, 'r': 40},
-        height=250,
-        legend={'x': 0, 'y': 0, 'bgcolor': 'rgba(0,0,0,0)'},
+        height=400,
+        legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(255,255,255,0.8)'},
         hovermode='closest',
-        plot_bgcolor="white",
+        plot_bgcolor='white',
         xaxis=dict(
-            range=[dates.min(), dates.max()]
+            range=[dates.min(), dates.max()],
+            showline=True,
+            linecolor="black",
+            mirror=True
         ),
         yaxis=dict(
             title=ylabel,
-            range=[ymin, ymax]
+            range=[ymin, ymax],
+            showline=True,
+            linecolor="black",
+            mirror=True
         ),
         yaxis2=dict(
             title=ylabel2,

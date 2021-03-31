@@ -27,6 +27,7 @@ from plot_lib.utils import get_plot_config
 from plot_lib.snow_plot import get_snow_plot
 from plot_lib.met_plot import get_met_plot
 from plot_lib.flow_plot import get_flow_plot
+from plot_lib.csas_plot import get_csas_plot
 
 app = database.app
 
@@ -137,7 +138,7 @@ def get_layout():
                             dbc.RadioItems(
                                 id='basin',
                                 options=basin_list,
-                                value=[])
+                                value=None)
                         ]
                     )),
                     dbc.Col(dbc.FormGroup(
@@ -167,7 +168,13 @@ def get_layout():
                                 value='dv',
                                 inline=True
                             ),
-                            html.Div(html.P()),
+                            dbc.RadioItems(
+                                id='flow_scale',
+                                options=[{'label': "Linear Flow", 'value': "linear"},
+                                         {'label': "Log Flow", 'value': "log"}],
+                                value='linear',
+                                inline=True
+                            ),
                             dbc.Checkbox(
                                 id='plot_forecast',
                             ),
@@ -225,6 +232,15 @@ def get_layout():
                                 "Plot CSAS Albedo with Flow",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_flow",
+                            ),
+                            html.Div(html.B()),
+                            dbc.Checkbox(
+                                id='plot_albedo_csas',
+                            ),
+                            dbc.Label(
+                                "Plot CSAS Albedo with CSAS",
+                                style=dict(marginLeft=10),
+                                html_for="plot_albedo_csas",
                             )
                         ]
                     ))
@@ -335,6 +351,18 @@ def get_layout():
                     ))
                 ]
             ),
+            dbc.Row(
+                [
+                    dbc.Col(dbc.FormGroup(
+                        [
+                            dcc.Graph(
+                                id='csas_plot',
+                                config=get_plot_config("dashboard_csas.jpg")
+                            ),
+                        ]
+                    ))
+                ]
+            ),
             # In development
             # dbc.Row(
             #     [
@@ -423,15 +451,12 @@ app.layout = get_layout()
     Output('plot_albedo_flow', 'disabled'),
     Output('plot_albedo_met', 'disabled'),
     Output('plot_dust', 'disabled'),
-    #Output('csas_sel', 'value'),
-    #Output('plot_albedo_flow', 'checked'),
-    #Output('plot_albedo_met', 'checked'),
-    #Output('plot_dust', 'checked'),
+    Output('plot_albedo_csas','disabled'),
     Output('csas_message', 'children'),
     [Input('date_selection', 'start_date'),
      Input('date_selection', 'end_date')]
 )
-def disable_csas(start_date,end_date,csas_sel,plot_albedo_flow,plot_albedo_met,plot_dust):
+def disable_csas(start_date,end_date):
     """
     :description: this function disables CSAS data for the current year...the csas website is too inconsistent to include.
     :param start_date: the start date selected
@@ -440,9 +465,9 @@ def disable_csas(start_date,end_date,csas_sel,plot_albedo_flow,plot_albedo_met,p
     """
     if (start_date>"2020-12-30") & (end_date>"2020-12-30"):
         print("csas disabled.")
-        return(True,True,True,True,"CSAS data unavailable for 2021")
+        return(True,True,True,True,True,"CSAS data unavailable for 2021")
     else:
-        return(False,False,False,False,"")
+        return(False,False,False,False,False,"")
 
 @app.callback(
     Output('plot_forecast', 'disabled'),
@@ -571,16 +596,13 @@ def load_preset_dates(a,b,c,d,e,f,g,start,end):
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('snotel_sel', 'value'),
-        Input('plot_dust', 'checked'),
-        Input('csas_sel', 'value'),
-        Input('dtype', 'value')
     ])
 def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
-                     end_date, snotel_sel, plot_dust, csas_sel, dtype):
+                     end_date, snotel_sel):
    
     fig, basin_stats = get_snow_plot(
         basin, stype, elrange, aspects, slopes, start_date, 
-        end_date, snotel_sel, plot_dust, csas_sel, dtype
+        end_date, snotel_sel
     )
     return fig, basin_stats
 
@@ -613,18 +635,35 @@ def update_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     [
         Input('usgs_sel', 'value'),
         Input('dtype', 'value'),
+        Input('flow_scale', 'value'),
         Input('plot_forecast', 'checked'),
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('csas_sel','value'),
         Input('plot_albedo_flow','checked')
     ])
-def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
+def update_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_date,
                      csas_sel, plot_albedo):
 
     fig = get_flow_plot(
-        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo
+        usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_date, csas_sel, plot_albedo
     )
+    return fig
+
+@app.callback(
+    Output('csas_plot', 'figure'),
+    [
+        Input('date_selection', 'start_date'),
+        Input('date_selection', 'end_date'),
+        Input('plot_dust',"checked"),
+        Input('csas_sel', 'value'),
+        Input('dtype', 'value'),
+        Input('plot_albedo_csas','checked'),
+    ])
+def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo):
+
+    fig = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
+
     return fig
 
 ### LAUNCH

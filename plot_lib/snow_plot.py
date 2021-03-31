@@ -24,7 +24,7 @@ def get_basin_stats(snodas_df):
     return stats
 
 def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
-                     end_date, snotel_sel, plot_dust, csas_sel, dtype):
+                     end_date, snotel_sel):
     """
     :description: this function updates the snowplot
     :param basin: the selected basins (checklist)
@@ -35,12 +35,8 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     :param start_date: start date (from date selector)
     :param end_date: end date (from date selector)
     :param snotel_sel: list of selected snotel sites ([])
-    :param plot_dust: boolean for plotting dust layers
-    :param csas_sel: list of selected csas sites ([])
-    :param dtype: data type (dv/iv)
     :return: update figure
     """
-    print(plot_dust)
     # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
 
@@ -50,21 +46,20 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         ylabel = "Mean SWE (in)"
         dlabel = "SWE"
         slabel = "WTEQ"
-        plot_dust = False
-        csas_sel = []
     if stype == "snowdepth":
         # snodas = snodas_sd
         ylabel = "Mean Snow Depth (in)"
         dlabel = "snow depth"
         slabel = "SNWD"
-        cvar = "Sno_Height_M"
+
 
     ## Process SNODAS data
     # Filter data
-    if basin == []:
+    if basin == None:
         print("No basins selected.")
         snodas_plot = False
         snodas_max = np.nan
+
     else:
         snodas_plot = True
         snodas_df = screen_snodas(
@@ -91,44 +86,8 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     else:
         snotel_max = snotel_s_df.max().max()
 
-    ## Process CSAS data (if selected)
-    if len(csas_sel)>0:
-        for sp in ["PTSP","SBSG"]:
-            if sp in csas_sel:
-                csas_sel.remove(sp)
-
-    if dtype=="dv":
-        cdates = dates
-    if dtype=="iv":
-        cdates = pd.date_range(start_date, end_date, freq="H", tz='UTC')
-
-    csas_s_df = pd.DataFrame(index=cdates)
-
-    for c in csas_sel:
-
-        if c=="SASP":
-            if dtype=="dv":
-                csas_in = SASP_dv
-            if dtype=="iv":
-                csas_in = SASP_iv
-        if c=="SBSP":
-            if dtype=="dv":
-                csas_in = SBSP_dv
-            if dtype=="iv":
-                csas_in = SBSP_iv
-
-        csas_in = csas_in[(csas_in.index>=start_date) & (csas_in.index<=end_date)]
-        csas_in = csas_s_df.merge(csas_in[cvar], left_index=True, right_index=True, how="left")
-        csas_s_df.loc[:, c] = csas_in[cvar]*3.28*12
-
-    if len(csas_sel) == 0:
-        csas_max = np.nan
-        print("No CSAS selected.")
-    else:
-        csas_max = csas_s_df.max().max()
-
     ### Plot the data
-    ymax = max([snodas_max, snotel_max, csas_max,20]) * 1.25
+    ymax = max([snodas_max, snotel_max,20]) * 1.25
 
     print("Updating snow plot...")
     fig = go.Figure()
@@ -148,34 +107,27 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             line=dict(color=snotel_gages.loc[s, "color"]),
             name=name_df.loc[s, "name"]))
 
-    for c in csas_sel:
-        fig.add_trace(go.Scatter(
-            x=csas_s_df.index,
-            y=csas_s_df[c],
-            text=ylabel,
-            mode='lines',
-            line=dict(color=csas_gages.loc[c, "color"],dash="dot"),
-            name=c))
-
-    if plot_dust == True:
-        for d in dust_ts.columns:
-            fig.add_trace(go.Scatter(
-                x=dust_ts.index,
-                y=dust_ts[d],
-                text=ylabel,
-                mode='lines+markers',
-                line=dict(color=dust_layers.loc[d, "color"],dash="dot"),
-                name=d))
-
     fig.add_trace(shade_forecast(ymax))
     fig.update_layout(
-        xaxis={'range': [start_date, end_date]},
-        yaxis={'title': ylabel, 'type': 'linear', 'range': [0, ymax]},
+        xaxis=dict(
+            range=[start_date, end_date],
+            showline=True,
+            linecolor="black",
+            mirror=True
+        ),
+        yaxis=dict(
+            title = ylabel,
+            type = 'linear',
+            range = [0, ymax],
+            showline = True,
+            linecolor = "black",
+            mirror = True
+        ),
         margin={'l': 40, 'b': 40, 't': 10, 'r': 45},
-        height=250,
-        legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(0,0,0,0)'},
+        height=400,
+        legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(255,255,255,0.8)'},
         hovermode='closest',
-        plot_bgcolor="white"
+        plot_bgcolor='white',
     )
     print('snow plot is done')
     

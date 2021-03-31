@@ -168,6 +168,7 @@ print('Calculating bounds of SNODAS.db')
 # for i, b in df_local_ids.iterrows():
 #     basin_list.append({"label": b["LOCAL_NAME"], "value": b['LOCAL_ID']})
 basin_list = [
+    {'label': 'NONE', 'value': None},
     {'label': 'SAN JUAN - NAVAJO RES NR ARCHULETA', 'value': 'NVRN5L_F'}, 
     {'label': 'ANIMAS - DURANGO', 'value': 'DRGC2H_F'}, 
     {'label': 'DOLORES - MCPHEE RESERVOIR', 'value': 'MPHC2L_F'}, 
