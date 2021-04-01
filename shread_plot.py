@@ -168,13 +168,6 @@ def get_layout():
                                 value='dv',
                                 inline=True
                             ),
-                            dbc.RadioItems(
-                                id='flow_scale',
-                                options=[{'label': "Linear Flow", 'value': "linear"},
-                                         {'label': "Log Flow", 'value': "log"}],
-                                value='linear',
-                                inline=True
-                            ),
                             dbc.Checkbox(
                                 id='plot_forecast',
                             ),
@@ -315,6 +308,7 @@ def get_layout():
                     ))
                 ]
             ),
+            ## TODO: Change to figure with subplots.
             dbc.Row(
                 [
                     dbc.Col(dbc.FormGroup(
@@ -635,18 +629,17 @@ def update_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     [
         Input('usgs_sel', 'value'),
         Input('dtype', 'value'),
-        Input('flow_scale', 'value'),
         Input('plot_forecast', 'checked'),
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('csas_sel','value'),
         Input('plot_albedo_flow','checked')
     ])
-def update_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_date,
+def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
                      csas_sel, plot_albedo):
 
     fig = get_flow_plot(
-        usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_date, csas_sel, plot_albedo
+        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo
     )
     return fig
 

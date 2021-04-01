@@ -13,7 +13,56 @@ from database import csas_gages, usgs_gages
 
 from plot_lib.utils import shade_forecast
 
-def get_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_date, csas_sel,
+def get_log_scale_dd(ymax,yaxis_state):
+    log_scale_dd = [
+        {
+            'active': 0,
+            'showactive': True,
+            'x': 1,
+            'y': 0.9,
+            'xanchor': 'right',
+            'yanchor': 'top',
+            'bgcolor': 'rgba(0,0,0,0)',
+            'type': 'dropdown',
+            'direction': 'down',
+            'font': {
+                'size': 10
+            },
+            'buttons': [
+                {
+                    'label': 'Linear Scale',
+                    'method': 'relayout',
+                    'args': ['yaxis', dict(
+                                        title='Flow (ft^3/s)',
+                                        side="left",
+                                        type="linear",
+                                        range=[1, ymax],
+                                        showline=True,
+                                        linecolor="black",
+                                        mirror=True
+                                        )
+                             ]
+                },
+                {
+                    'label': 'Log Scale',
+                    'method': 'relayout',
+                    'args': ['yaxis', dict(
+                                        title='Flow (ft^3/s)',
+                                        side="left",
+                                        type="log",
+                                        range=[0.1, np.ceil(np.log10(ymax))],
+                                        showline=True,
+                                        linecolor="black",
+                                        mirror=True
+                                        )
+                             ]
+                },
+            ]
+        }
+    ]
+    return log_scale_dd
+
+def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel,
                   plot_albedo):
     """
     :description: this function updates the flow plot
@@ -162,10 +211,8 @@ def get_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_da
             csas_a_max = csas_a_df.max().max()
             # print("A")
             # print(csas_a_df)
-    if flow_scale=="linear":
-        ymax = np.nanmax([usgs_f_max,csas_f_max]) * 1.25
-    else:
-        ymax = np.ceil(np.log10(np.nanmax([usgs_f_max,csas_f_max])))
+    ymax = np.nanmax([usgs_f_max,csas_f_max]) * 1.25
+
 
     print("Updating flow plot...")
 
@@ -200,10 +247,9 @@ def get_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_da
                 name=c+" 100% - Albedo",
                 yaxis="y2"))
 
-    if flow_scale=="linear":
-        fig.add_trace(shade_forecast(ymax))
-    else:
-        fig.add_trace(shade_forecast(10**ymax))
+
+    fig.add_trace(shade_forecast(1000000))
+
 
     fig.update_layout(
         margin={'l': 40, 'b': 40, 't': 0, 'r': 45},
@@ -220,12 +266,14 @@ def get_flow_plot(usgs_sel, dtype, flow_scale, plot_forecast, start_date, end_da
         yaxis=dict(
             title='Flow (ft^3/s)',
             side="left",
-            type=flow_scale,
-            range=[0.1, ymax],
+            type="linear",
+            range=[1, ymax],
             showline=True,
             linecolor="black",
             mirror=True
-        )
+        ))
+    fig.update_layout(
+        updatemenus=get_log_scale_dd(ymax,fig.layout.yaxis)
     )
     if plot_albedo == True:
         fig.update_layout(
