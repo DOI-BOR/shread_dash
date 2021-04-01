@@ -29,9 +29,9 @@ def create_app():
     )
     app.title="WCAO Dashboard"
     db_path = Path(app_dir, 'database')
-    snodas_all_db_path = Path(db_path, 'snodas.db')
-    snodas_swe_db_path = Path(db_path, 'snodas_swe.db')
-    snodas_sd_db_path = Path(db_path, 'snodas_sd.db')
+    snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
+    snodas_swe_db_path = Path(db_path, 'SNODAS', 'snodas_swe.db')
+    snodas_sd_db_path = Path(db_path, 'SNODAS', 'snodas_sd.db')
     snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
@@ -70,7 +70,7 @@ def csas_db_import(data_file, dtype, db_dir=this_dir):
     :param type: :dv: or :iv:, time step
     :return: df, database in a date indexed dataframe
     """
-    data_path = Path(db_dir, data_file)
+    data_path = Path(db_dir, 'CSAS', data_file)
     db = pd.read_csv(data_path)
     if dtype == "24hr":
         dates = hydro.compose_date(years=db.Year,days=db.DOY)
@@ -87,7 +87,8 @@ def csas_db_import(data_file, dtype, db_dir=this_dir):
 os.chdir(os.path.join(app_dir, 'database'))
 
 # Identify files in database
-data_files = os.listdir(os.path.join(app_dir, 'database'))
+csas_dir = os.path.join(app_dir, 'database', 'CSAS')
+csas_files = os.listdir(csas_dir)
 res_dir = os.path.join(app_dir, 'resources')
 
 # Identify dataframes used in dashboard
@@ -101,7 +102,7 @@ SBSG_iv = SBSG_dv = pd.DataFrame()
 
 ### Import Database Data ###
 # Parse files (select csv files, open, append date, append to database)
-for data_file in data_files:
+for data_file in csas_files:
     if "zip" in data_file:
         continue
     if ".db" in data_file:
@@ -113,27 +114,6 @@ for data_file in data_files:
         source = data_file_split[0]
         datatype = data_file_split[1]
 
-        if source == "snodas":
-            continue
-        #     if datatype == "swe":
-        #         snodas_swe = db_import(data_file)
-        #     if datatype == "snowdepth":
-        #         snodas_sd = db_import(data_file)
-        # if source == "moddrfs":
-        #     if datatype == "forc":
-        #         moddrfs_forc = db_import(data_file)
-        #     if datatype == "grnsz":
-        #         # moddrfs_grnsz = db_import(data_file) # not used yet
-        #         continue
-        if source == "modscag":
-            # Skip for now
-            continue
-        if source == "snowreporters":
-            # Import as list of SNOTEL sites (ignore actual data)
-            # reporters = pd.read_csv(data_file)
-            # snotel_raw = reporters[reporters["datatype"]=="SNOTEL"]
-            # snotel_raw = snotel_raw.reset_index()
-            continue
         if source == "SBSP":
             if datatype == "1hr":
                 SBSP_iv = csas_db_import(data_file, datatype)
@@ -254,7 +234,7 @@ for c in csas_gages.index:
 
 # Import CSAS dust on snow data
 try:
-    dust = pd.read_csv(os.path.join(res_dir, "csas_dust.csv"))
+    dust = pd.read_csv(os.path.join(csas_dir, "csas_dust.csv"))
 except FileNotFoundError:
     dust = pd.DataFrame()
 if dust.empty:
