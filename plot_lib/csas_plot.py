@@ -5,7 +5,7 @@ import numpy as np
 import plotly.graph_objects as go
 import hydroimport as hydro
 
-from database import SBSP_iv, SBSP_dv, SASP_iv, SASP_dv
+from database import SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, SBSG_dv, SBSG_iv
 from database import csas_gages, dust_ts, dust_layers
 
 
@@ -23,10 +23,11 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
     # Set snow type based on user selection
     cvar = "Sno_Height_M"
+    ylabel = ""
 
     ## Process CSAS data (if selected)
     if len(csas_sel)>0:
-        for sp in ["PTSP","SBSG"]:
+        for sp in ["PTSP"]:
             if sp in csas_sel:
                 csas_sel.remove(sp)
 
@@ -36,6 +37,7 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
         cdates = dates
 
     csas_s_df = pd.DataFrame(index=cdates)
+    csas_f_df = pd.DataFrame(index=cdates)
     if plot_albedo==True:
         csas_a_df = pd.DataFrame(index=cdates)
 
@@ -46,17 +48,29 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
                 csas_in = SASP_dv
             if dtype=="iv":
                 csas_in = SASP_iv
+            ylabel = ylabel+"Depth (in)"
         if c=="SBSP":
             if dtype=="dv":
                 csas_in = SBSP_dv
             if dtype=="iv":
                 csas_in = SBSP_iv
+        if c=="SBSG":
+            if dtype=="dv":
+                csas_in = SBSG_dv
+            if dtype=="iv":
+                csas_in = SBSG_iv
+            ylabel = ylabel+"| Flow (ft^3/s)"
 
         csas_in = csas_in[(csas_in.index>=start_date) & (csas_in.index<=end_date)]
-        csas_in = csas_s_df.merge(csas_in, left_index=True, right_index=True, how="left")
-        csas_s_df.loc[:, c] = csas_in[cvar]*3.28*12
 
-        if plot_albedo == True:
+        if c=="SBSG":
+            csas_in = csas_f_df.merge(csas_in, left_index=True, right_index=True, how="left")
+            csas_f_df.loc[:, c] = csas_in["Discharge_CFS"]
+        else:
+            csas_in = csas_s_df.merge(csas_in, left_index=True, right_index=True, how="left")
+            csas_s_df.loc[:, c] = csas_in[cvar]*3.28*12
+
+        if (plot_albedo == True) & (c != "SBSG"):
             csas_a_df.loc[:, c] = csas_in["PyDwn_Unfilt_W"] / csas_in["PyUp_Unfilt_W"]
             csas_a_df.loc[csas_a_df[c] > 1, c] = 1
             csas_a_df.loc[csas_a_df[c] < 0, c] = 0
@@ -68,7 +82,10 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
         csas_max = np.nan
         print("No CSAS selected.")
     else:
-        csas_max = csas_s_df.max().max()
+        if csas_f_df.columns==None:
+            csas_max = csas_s_df.max().max()
+        else:
+            csas_max = np.nanmax([csas_s_df.max().max(),csas_f_df.max().max()])
 
     ### Plot the data
     ymax = max([csas_max,20]) * 1.25
@@ -77,13 +94,23 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
     fig = go.Figure()
 
     for c in csas_sel:
-        fig.add_trace(go.Scatter(
-            x=csas_s_df.index,
-            y=csas_s_df[c],
-            text="Snow Depth (in)",
-            mode='lines',
-            line=dict(color=csas_gages.loc[c, "color"],dash="dot"),
-            name=c))
+        if c=="SBSG":
+            fig.add_trace(go.Scatter(
+                x=csas_f_df.index,
+                y=csas_f_df[c],
+                text=c + " Flow",
+                mode='lines',
+                line=dict(color="green", dash="dot"),
+                name=c + " Flow",
+                yaxis="y1"))
+        else:
+            fig.add_trace(go.Scatter(
+                x=csas_s_df.index,
+                y=csas_s_df[c],
+                text="Snow Depth (in)",
+                mode='lines',
+                line=dict(color=csas_gages.loc[c, "color"], dash="dot"),
+                name=c))
 
     if plot_dust == True:
         for d in dust_ts.columns:
@@ -119,7 +146,7 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
             mirror=True
         ),
         yaxis=dict(
-            title='Depth (in)',
+            title=ylabel,
             side="left",
             range=[0, ymax],
             showline=True,

@@ -113,6 +113,7 @@ database/SNODAS/*.csv
 database/SNODAS/shread_data/*.csv
 *.db
 *.zip
+database/*.csv
 
 # .idea folder
 .idea/

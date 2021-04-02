@@ -248,8 +248,8 @@ else:
     dust_ts = dust_ts.drop("Date",axis=1)
     dust_ts = (dust_ts.apply(pd.to_numeric)/2.54)
 
-dust_layers = pd.DataFrame(index=dust_ts.columns)
-dust_layers["color"] = sns.color_palette("dark", len(dust_layers)).as_hex()
+    dust_layers = pd.DataFrame(index=dust_ts.columns)
+    dust_layers["color"] = sns.color_palette("dark", len(dust_layers)).as_hex()
 
 # Radiative forcing check
 if moddrfs_forc.empty:
