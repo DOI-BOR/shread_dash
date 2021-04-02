@@ -67,7 +67,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         )
         if snodas_df.empty:
             snodas_plot = False
-            print("Query returned no valid SNODAS data")
+            snodas_max = np.nan
             basin_stats_str = 'No valid SNODAS data for given parameters'
         else:
             # Calculate basin average values
@@ -94,7 +94,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         snotel_max = snotel_s_df.max().max()
 
     ### Plot the data
-    ymax = max([snodas_max, snotel_max,20]) * 1.25
+    ymax = max([snodas_max, snotel_max, 20]) * 1.25
 
     print("Updating snow plot...")
     fig = go.Figure()
