@@ -93,33 +93,14 @@ def ba_stats(input_df, dates):
 
 # Function to calculate mean, median, 5th and 95th states for screened basin
 def ba_snodas_stats(df, dates):
-
+    
     ba_df = df[['Date', 'mean']].groupby(
         by='Date',
         sort=True,
-        #dropna=True
     ).describe(percentiles=[0.05, 0.5, 0.95]).droplevel(0, axis=1)
 
     return ba_df
-#     ba_df = pd.DataFrame(index=input_df.index)
-#     for d in dates:
-#         ba_df_daily = input_df.loc[input_df.index == d, "mean"]
-#         if ba_df_daily.empty:
-#             continue
-#             ba_df.loc[d, "mean"] = np.nan
-#             ba_df.loc[d, "median"] = np.nan
-#             ba_df.loc[d, "max"] = np.nan
-#             ba_df.loc[d, "min"] = np.nan
-#         else:
-#             ba_df.loc[d, "mean"] = ba_df_daily.mean()
-#             ba_df.loc[d, "median"] = ba_df_daily.median()
-#             ba_df_daily = ba_df_daily.fillna(0)
-#             ba_df_daily_ex = ba_df_daily.sort_values(ignore_index=1)
-#             d_95 = int(len(ba_df_daily_ex) * 0.95)
-#             d_05 = int(len(ba_df_daily_ex) * 0.05)
-#             ba_df.loc[d, "max"] = ba_df_daily_ex.loc[d_95]
-#             ba_df.loc[d, "min"] = ba_df_daily_ex.loc[d_05]
-#     return ba_df
+
 
 # Functions to plot max, min, mean and median ba timeseries
 def ba_max_plot(ba_df,dlabel,color="grey"):

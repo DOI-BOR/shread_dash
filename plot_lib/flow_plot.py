@@ -13,7 +13,7 @@ from database import csas_gages, usgs_gages
 
 from plot_lib.utils import shade_forecast
 
-def get_log_scale_dd(ymax,yaxis_state):
+def get_log_scale_dd(ymax):
     log_scale_dd = [
         {
             'active': 0,
@@ -273,7 +273,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
             mirror=True
         ))
     fig.update_layout(
-        updatemenus=get_log_scale_dd(ymax,fig.layout.yaxis)
+        updatemenus=get_log_scale_dd(ymax)
     )
     if plot_albedo == True:
         fig.update_layout(

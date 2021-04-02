@@ -59,15 +59,22 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         print("No basins selected.")
         snodas_plot = False
         snodas_max = np.nan
-
+        basin_stats_str = ''
     else:
         snodas_plot = True
         snodas_df = screen_snodas(
             stype, start_date, end_date, basin, aspects, elrange, slopes
         )
-        # Calculate basin average values
-        ba_snodas = ba_snodas_stats(snodas_df, dates)
-        snodas_max = ba_snodas['95%'].max()
+        if snodas_df.empty:
+            snodas_plot = False
+            print("Query returned no valid SNODAS data")
+            basin_stats_str = 'No valid SNODAS data for given parameters'
+        else:
+            # Calculate basin average values
+            ba_snodas = ba_snodas_stats(snodas_df, dates)
+            snodas_max = ba_snodas['95%'].max()
+            basin_stats_str = get_basin_stats(snodas_df)
+            
     ## Process SNOTEL data (if selected)
 
     # Add data for selected SNOTEL sites
@@ -132,6 +139,6 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     print('snow plot is done')
     
     if snodas_plot:
-        return fig, get_basin_stats(snodas_df)
+        return fig, basin_stats_str
     
-    return fig, ''
+    return fig, basin_stats_str
