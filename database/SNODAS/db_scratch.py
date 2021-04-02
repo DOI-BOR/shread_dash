@@ -28,9 +28,9 @@ def create_app():
     )
     app.title="WCAO Dashboard"
     db_path = Path(app_dir, 'database')
-    snodas_all_db_path = Path(db_path, 'snodas.db')
-    snodas_swe_db_path = Path(db_path, 'snodas_swe.db')
-    snodas_sd_db_path = Path(db_path, 'snodas_sd.db')
+    snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
+    snodas_swe_db_path = Path(db_path, 'SNODAS', 'snodas_swe.db')
+    snodas_sd_db_path = Path(db_path, 'SNODAS', 'snodas_sd.db')
     snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
