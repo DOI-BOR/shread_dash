@@ -18,7 +18,7 @@ def push_to_sql(df):
     return
 
 # Opens files, appends type, source and data and appends to dataframe
-def data_ingest(in_file,drop_list):
+def data_ingest(in_file, drop_list):
     in_file_split = in_file.split("_")
 
     data_in = pd.read_csv(in_file)
@@ -36,8 +36,9 @@ def data_ingest(in_file,drop_list):
 
 # Define working directory (data directory)
 this_dir = os.path.dirname(os.path.realpath(__file__))
+shread_dir = os.path.join(this_dir, 'shread_data')
 #this_dir = os.path.join("C://Users//tclarkin//Documents//GitHub//SHREAD_plot")
-os.chdir("C://Programs//SHREAD//data//database")  # Location of SHREAD data files
+# os.chdir("C://Programs//SHREAD//data//database")  # Location of SHREAD data files
 database = os.path.join(this_dir, 'database')
 database = this_dir
 
@@ -52,7 +53,7 @@ drop_list = [
 
 # Define files in database
 start = time.time()
-data_files = os.listdir()
+data_files = os.listdir(shread_dir)
 tif_files = list()
 data_file_summary = pd.DataFrame()
 for in_file in data_files:
@@ -75,7 +76,9 @@ for in_file in data_files:
         continue
 
     in_file_split = in_file.split("_")
-    data_file_summary = data_file_summary.append([[in_file,in_file_split[0],in_file_split[1],in_file_split[2]]])
+    data_file_summary = data_file_summary.append(
+        [[in_file, in_file_split[0], in_file_split[1], in_file_split[2]]]
+    )
 end = time.time()
 if verbose == True:
     print("{} seconds to compile list of files.".format(round(end - start,1)))
@@ -83,6 +86,9 @@ if verbose == True:
 ### Import SHREAD Data ###
 # Parse files (select csv files, open, append date, append to database)
 sources = pd.unique(data_file_summary.loc[:,1])
+
+import sys
+sys.exit(0)
 if verbose == True:
     print("Overwrite set to {}".format(overwrite))
 for source in sources:

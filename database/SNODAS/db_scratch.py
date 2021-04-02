@@ -7,30 +7,21 @@ Created on Mon Mar 22 08:40:21 2021
 
 import os
 import sys
-import datetime as dt
 from pathlib import Path
 import pandas as pd
 from flask_sqlalchemy import SQLAlchemy
-import dash_bootstrap_components as dbc
 import dash
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
-app_dir = os.path.dirname(this_dir)
 
-def create_app():
-    assets_path = Path(app_dir, 'assets')
+def create_app(db_path):
     app = dash.Dash(
         __name__,
-        external_stylesheets=[dbc.themes.BOOTSTRAP],
-        update_title="Updating...",
-        # suppress_callback_exceptions=True,
-        assets_folder=assets_path
     )
-    app.title="WCAO Dashboard"
-    db_path = Path(app_dir, 'database')
-    snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
-    snodas_swe_db_path = Path(db_path, 'SNODAS', 'snodas_swe.db')
-    snodas_sd_db_path = Path(db_path, 'SNODAS', 'snodas_sd.db')
+    snodas_all_db_path = Path(db_path, 'snodas.db')
+    snodas_swe_db_path = Path(db_path, 'swe.db')
+    snodas_sd_db_path = Path(db_path, 'sd.db')
+    print(snodas_sd_db_path)
     snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
@@ -43,7 +34,7 @@ def create_app():
 
     return app
 
-app = create_app()
+app = create_app(this_dir)
 db = SQLAlchemy(app.server)
 db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")

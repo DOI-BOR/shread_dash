@@ -110,6 +110,7 @@ dmypy.json
 # raw data
 database/CSAS/*.csv
 database/SNODAS/*.csv
+database/SNODAS/shread_data/*.csv
 *.db
 *.zip
 
