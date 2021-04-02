@@ -42,8 +42,8 @@ binds = db.get_binds()
 SENSOR = 'swe' # or 'snowdepth'
 slopes = [0, 80]
 elrange = [4000, 13000]
-s_date = '2012-03-01'
-e_date = '2012-04-01'
+s_date = '2000-03-01'
+e_date = '2020-04-01'
 
 bind_dict = {
     'swe': 'snodas_swe',
@@ -55,19 +55,19 @@ basins = db.get_tables_for_bind()
 basin = basins[-1]
 engine = db.get_engine(bind=bind)
 qry = (
-    f"select * from {basin} where "
-    f"`Date` >= '{s_date}' "
-    f"and `Date` <= '{e_date}' "
-    f"and slope_d >= {slopes[0]} "
-    f"and slope_d <= {slopes[1]} "
-    f"and elev_ft >= {elrange[0]} "
-    f"and elev_ft <= {elrange[1]} "
+    f"select * from {basin}"#" where "
+    # f"`Date` >= '{s_date}' "
+    # f"and `Date` <= '{e_date}' "
+    # f"and slope_d >= {slopes[0]} "
+    # f"and slope_d <= {slopes[1]} "
+    # f"and elev_ft >= {elrange[0]} "
+    # f"and elev_ft <= {elrange[1]} "
 )
 print(f'Query: {qry}')
 
 df = pd.read_sql(
     qry, 
     db.get_engine(bind=bind), 
-    parse_dates=['Date']
+    parse_dates=['Date'],
 )
 sys.exit(0)
