@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import hydroimport as hydro
+from hydroimport import import_snotel,import_csas_live
 
 from database import snotel_gages
 from database import  SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, PTSP_dv, PTSP_iv
@@ -82,7 +82,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
                 s, "name"] + " (" + str(round(snotel_gages.loc[s, "elev_ft"], 0)) + " ft)"
 
             # Import SNOTEL data
-            snotel_in = hydro.import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
+            snotel_in = import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
 
             # Merge and add to temp and precip df
             snotel_t_in = snotel_t_df.merge(snotel_in["TAVG"], left_index=True, right_index=True, how="left")
@@ -102,6 +102,10 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
         print("No snotel selected.")
 
     ## Process CSAS data (if selected)
+    # TODO: handle current year csas met data
+    if start_date>"2020-12-30":
+        csas_sel=[]
+
     if len(csas_sel) > 0:
         for sp in ["SBSG"]:
             if sp in csas_sel:
@@ -121,6 +125,8 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     csas_t_df = pd.DataFrame(index=cdates)
     if plot_albedo == True:
         csas_a_df = pd.DataFrame(index=cdates)
+
+    # Handling for archived CSAS data
     for c in csas_sel:
         if c=="SASP":
             if dtype=="dv":

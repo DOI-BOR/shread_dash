@@ -300,9 +300,6 @@ def get_layout():
                                 placeholder="Select CSAS study plots",
                                 value=[],
                                 multi=True
-                            ),
-                            html.Div(
-                                id='csas_message',
                             )
                         ]
                     ))
@@ -357,6 +354,28 @@ def get_layout():
                     ))
                 ]
             ),
+            dbc.Row(
+                [
+                    dbc.Col(dbc.FormGroup(
+                        [
+                            dbc.Button(
+                                "Retry CSAS",
+                                id="csas_replot",
+                                color="light"
+                                ),
+                            ]
+                        ),
+                        width=2
+                    ),
+                    dbc.Col(dbc.FormGroup(
+                        [
+                            html.Div(
+                                id='csas_message',
+                            )
+                        ]
+                    ))
+                ]
+            )
             # In development
             # dbc.Row(
             #     [
@@ -446,7 +465,6 @@ app.layout = get_layout()
     Output('plot_albedo_met', 'disabled'),
     Output('plot_dust', 'disabled'),
     Output('plot_albedo_csas','disabled'),
-    Output('csas_message', 'children'),
     [Input('date_selection', 'start_date'),
      Input('date_selection', 'end_date')]
 )
@@ -459,9 +477,9 @@ def disable_csas(start_date,end_date):
     """
     if (start_date>"2020-12-30") & (end_date>"2020-12-30"):
         print("csas disabled.")
-        return(True,True,True,True,True,"CSAS data unavailable for 2021")
-    else:
-        return(False,False,False,False,False,"")
+        return(False,True,True,False,False)
+    if (start_date<="2020-12-30") & (end_date<="2020-12-30"):
+        return(False,False,False,False,False)
 
 @app.callback(
     Output('plot_forecast', 'disabled'),
@@ -645,6 +663,8 @@ def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
 
 @app.callback(
     Output('csas_plot', 'figure'),
+    Output('csas_message',"children"),
+    Output('csas_replot','color'),
     [
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
@@ -652,12 +672,13 @@ def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
         Input('csas_sel', 'value'),
         Input('dtype', 'value'),
         Input('plot_albedo_csas','checked'),
+        Input('csas_replot','n_clicks'),
     ])
-def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo):
+def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_clicks):
 
-    fig = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
+    fig,message,csas_color = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
 
-    return fig
+    return fig,message,csas_color
 
 ### LAUNCH
 if __name__ == '__main__':

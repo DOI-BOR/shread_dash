@@ -29,17 +29,17 @@ def create_app():
     )
     app.title="WCAO Dashboard"
     db_path = Path(app_dir, 'database')
-    snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
-    snodas_swe_db_path = Path(db_path, 'SNODAS', 'snodas_swe.db')
-    snodas_sd_db_path = Path(db_path, 'SNODAS', 'snodas_sd.db')
-    snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
+    #snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
+    snodas_swe_db_path = Path(db_path, 'SNODAS', 'swe.db')
+    snodas_sd_db_path = Path(db_path, 'SNODAS', 'sd.db')
+    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
+    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
-        'snodas_swe': snodas_swe_db_con_str,
-        'snodas_sd': snodas_sd_db_con_str
+        'swe': snodas_swe_db_con_str,
+        'sd': snodas_sd_db_con_str
     }
 
     return app
@@ -92,13 +92,7 @@ csas_files = os.listdir(csas_dir)
 res_dir = os.path.join(app_dir, 'resources')
 
 # Identify dataframes used in dashboard
-snodas_swe = pd.DataFrame()
-snodas_sd = pd.DataFrame()
 moddrfs_forc = pd.DataFrame()
-SBSP_iv = SBSP_dv = pd.DataFrame()
-SASP_iv = SASP_dv = pd.DataFrame()
-PTSP_iv = PTSP_dv = pd.DataFrame()
-SBSG_iv = SBSG_dv = pd.DataFrame()
 
 ### Import Database Data ###
 # Parse files (select csv files, open, append date, append to database)

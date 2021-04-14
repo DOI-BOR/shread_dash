@@ -23,7 +23,7 @@ DEFAULT_CSV_DIR = Path(this_dir, 'shread_data')
 DEFAULT_DB_DIR = this_dir
 COL_TYPES = {
     'Date': str, 'Type': str, 'OBJECTID': int, 'elev_ft': int, 'slope_d': int, 
-    'aspct': str, 'nlcd': int, 'LOCAL_ID': str, 'LOCAL_NAME': str, 'mean': float
+    'aspct': int, 'nlcd': int, 'LOCAL_ID': str, 'LOCAL_NAME': str, 'mean': float
 }
 
 
@@ -53,7 +53,7 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR, verbose=False):
     df_swe.name = 'swe'
     df_sd = pd.concat(sd_df_list)
     df_sd.name = 'sd'
-    print('  Sucess!!!\n')
+    print('  Success!!!\n')
     return {'swe': df_swe, 'sd': df_sd}
 
 def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
@@ -147,7 +147,7 @@ def parse_args():
     parser.add_argument(
         "-e", "--exists", 
         help="behavior if database table exists already",
-        choices=['replace', 'append', 'fail'], default='replace'
+        choices=['replace', 'append', 'fail'], default='append'
     )
     parser.add_argument(
         "-c", "--check_dups", 
@@ -167,7 +167,8 @@ if __name__ == '__main__':
     import argparse
     
     args = parse_args()
-    
+    print(args)
+
     if args.version:
         print('shread_to_db.py v1.0')
     

@@ -18,18 +18,18 @@ def create_app(db_path):
     app = dash.Dash(
         __name__,
     )
-    snodas_all_db_path = Path(db_path, 'snodas.db')
+    #snodas_all_db_path = Path(db_path, 'snodas.db')
     snodas_swe_db_path = Path(db_path, 'swe.db')
     snodas_sd_db_path = Path(db_path, 'sd.db')
     print(snodas_sd_db_path)
-    snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
+    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
+    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
-        'snodas_swe': snodas_swe_db_con_str,
-        'snodas_sd': snodas_sd_db_con_str
+        'swe': snodas_swe_db_con_str,
+        'sd': snodas_sd_db_con_str
     }
 
     return app
@@ -46,13 +46,13 @@ s_date = '2000-03-01'
 e_date = '2020-04-01'
 
 bind_dict = {
-    'swe': 'snodas_swe',
-    'snowdepth': 'snodas_sd'
+    'swe': 'swe',
+    'snowdepth': 'sd'
 }
 bind = bind_dict[SENSOR]
 print(bind)
 basins = db.get_tables_for_bind()
-basin = basins[-1]
+basin = basins[0]
 engine = db.get_engine(bind=bind)
 qry = (
     f"select * from {basin}"#" where "
@@ -70,4 +70,6 @@ df = pd.read_sql(
     db.get_engine(bind=bind), 
     parse_dates=['Date'],
 )
+print(df["Date"].min())
+print(df["Date"].max())
 sys.exit(0)

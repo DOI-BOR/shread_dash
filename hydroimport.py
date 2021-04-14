@@ -8,6 +8,7 @@ import numpy as np
 import datetime as dt
 from datetime import timezone
 from requests import get as r_get
+from requests.exceptions import ReadTimeout
 from io import StringIO
 
 def import_rfc(site, dtype, rfc = "cbrfc", verbose=False):
@@ -117,7 +118,7 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
         tries = 0
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=3.5).text
+                csv_str = r_get(site_url, timeout=5).text
                 failed = False
             except TimeoutError:
                 raise Exception("Timeout; Data unavailable?")
@@ -204,79 +205,87 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
         dataframe
     """
     # Set filepath extension for dtype
-    if dtype == "dv":
-        ext = "Daily.php"
+
     if dtype == "iv":
         ext = "Hourly.php"
+        print("CSAS site unresponsive for sub-daily data...changing to daily.")
+        dtype = "dv"
+    if dtype == "dv":
+        ext = "Daily.php"
 
-    if pd.to_datetime(start_date).year == dt.datetime.now().year:
-        site_url = "https://www.snowstudies.info/NRTData/"+site+"Full"+ext
-        archive = 0
-
-    else:
+    if pd.to_datetime(start_date).year < dt.datetime.now().year:
         print("Program not designed to handle archive CSAS data; changing start date.")
         start_date = "2021-01-01"
+    site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
+    print(site_url)
 
-    try:
-        csv_str = r_get(site_url,timeout=10).text
-    except TimeoutError:
+    failed = True
+    tries = 0
+    while failed:
         try:
-            csv_str = r_get(site_url, timeout=10).text
+            csv_str = r_get(site_url, timeout=10,verify=False).text
+            failed = False
         except TimeoutError:
-            raise Exception("Data not available")
-    if "500 Internal Server Error" in csv_str:
-        print("Site URL incorrect.")
-        return None
-    if "Error:" in csv_str:
-        print("Site URL incorrect.")
-        return None
+            raise Exception("Timeout; Data unavailable?")
+            tries += 1
+            print(tries)
+            if tries > 10:
+                return
+
 
     csv_io = StringIO(csv_str)
-    f = pd.read_html(csv_io)
+    try:
+        f = pd.read_html(csv_io)
+    except ValueError:
+        return
 
     csas_in = f[1]
     if csas_in.empty:
         print("Data not available")
-        return None
+        return
+    if csas_in is None:
+        print("Data not available")
+        return
 
     if dtype == "dv":
         dates = compose_date(years=csas_in.Year,days=csas_in.Day)
     if dtype == "iv":
         dates = compose_date(years=csas_in.Year, days=csas_in.Day,hours=csas_in.Hour/100)
 
-    csas_df = pd.DataFrame(columns=["SNWD","TAVG","RadUP","RadDN","ALBEDO"])
+    csas_df = pd.DataFrame()
 
     for col in csas_in.columns:
         if "Snow Depth" in col:
-            csas_df["SNWD"] = csas_in[col]
+            csas_df["SNWD"] = csas_in[col]*3.28084*12
         if ("Daily Average Air Temperature" in col) & ("(C" in col):
-            csas_df["TAVG"] = csas_in[col]
+            csas_df["TAVG"] = csas_in[col]*9/5+32
         else:
             if ("Air Temperature" in col) & ("(C" in col):
-                csas_df["TAVG"] = csas_in[col]
+                csas_df["TAVG"] = csas_in[col]*9/5+32
         if "Solar Radiation-Up" in col:
             csas_df["RadUP"] = csas_in[col]
         if "Solar Radiation-Down" in col:
             csas_df["RadDN"] = csas_in[col]
-        if "Albedo" in col:
-            csas_df["ALBEDO"] = csas_in[col]
         if ("Discharge" in col) or ("discharge" in col):
             csas_df["FLOW"] = csas_in[col]
 
-    # Clean up
+    # Add date index
     csas_df.index=dates
-    csas_df["SNWD"] = csas_df["SNWD"]*3.28084*12
-    csas_df["TAVG"] = csas_df["TAVG"]*9/5+32
-    if pd.isna(csas_df["ALBEDO"]).all():
-        csas_df["ALBEDO"] = csas_df["RadDN"] / csas_df["RadUP"]
-    csas_df[csas_df["ALBEDO"]>1] = 1
 
+    # Calculated Albedo (if not included)
+    if "RadUP" in csas_df.columns:
+        csas_df["ALBEDO"] = csas_df["RadDN"] / csas_df["RadUP"]
+        csas_df.loc[csas_df["ALBEDO"]>1,'ALBEDO'] = 1
+        csas_df.loc[csas_df["ALBEDO"]<0,"ALBEDO"] = 0
+    if "SNWD" in csas_df.columns:
+        csas_df.loc[csas_df["SNWD"]==1,"SNWD"] = np.nan
+        csas_df.loc[csas_df["SNWD"]>109,'SNWD'] = np.nan
+        csas_df["SNWD"] = csas_df["SNWD"].interpolate(limit=3)
 
     if dtype == "dv":
         csas_out = csas_df.loc[(csas_df.index >= start_date) & (csas_df.index <= end_date)]
         csas_out = csas_out.tz_localize("UTC")
     if dtype == "iv":
-
 
         csas_out = csas_df.loc[(csas_df.index >= dt.datetime.strptime(start_date,"%Y-%m-%d")) & (csas_df.index <= dt.datetime.strptime(end_date,"%Y-%m-%d"))]
         csas_out = csas_out.tz_localize("America/Denver")
@@ -303,9 +312,8 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 # site = "ARFNd5"
 # y = import_rfc(site,dtype)
 # #
-# start_date = "2021-01-01"
-# end_date = "2021-01-31"
+# start_date = "2021-04-01"
+# end_date = "2021-04-14"
 # dtype = "iv"
-# site = "SASP"
-# z = import_csas(site,start_date,end_date,dtype)
-# time.sleep(0.6)
+# site = "PTSP"
+# z = import_csas_live(site,start_date,end_date,dtype)

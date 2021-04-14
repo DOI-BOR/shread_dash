@@ -75,8 +75,8 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
     :param plot_albedo: boolean, plot albedo data for selected csas_sel
     :return: update figure
     """
-    print(plot_albedo)
-    print(plot_forecast)
+    #print(plot_albedo)
+    #print(plot_forecast)
     # Based on data type (daily or instantaneous), flow data date index
     if dtype == "dv":
         dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
@@ -114,7 +114,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
             flow_in[parameter] = np.nan
 
         if len(flow_in) == 0:
-            print("USGS data not found.")
+            print(f"USGS data not found for {g}.")
             flow_in = pd.DataFrame(index=dates)
             flow_in[parameter] = np.nan
 
@@ -154,6 +154,10 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
 
 
     ## Process CSAS data (if selected)
+    # TODO: handle current year csas met data
+    if start_date>"2020-12-30":
+        csas_sel=[]
+
     if len(csas_sel) > 0:
         if plot_albedo != True:
             for sp in ["SASP","SBSP"]:
@@ -189,13 +193,12 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
             if dtype == "iv":
                 csas_in = SBSG_iv
 
-        csas_in = csas_in[(csas_in.index>=start_date) & (csas_in.index<=end_date)]
         csas_in = csas_f_df.merge(csas_in, left_index=True, right_index=True, how="left")
         if c == "SBSG":
-            csas_f_df.loc[:, c] = csas_in["Discharge_CFS"]
+            csas_f_df[c] = csas_in["Discharge_CFS"]
         else:
             if plot_albedo == True:
-                csas_a_df.loc[:, c] = csas_in["PyDwn_Unfilt_W"] / csas_in["PyUp_Unfilt_W"]
+                csas_a_df[c] = csas_in["PyDwn_Unfilt_W"] / csas_in["PyUp_Unfilt_W"]
                 csas_a_df.loc[csas_a_df[c] > 1, c] = 1
                 csas_a_df.loc[csas_a_df[c] < 0, c] = 0
 

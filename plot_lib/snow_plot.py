@@ -42,12 +42,10 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
 
     # Set snow type based on user selection
     if stype == "swe":
-        # snodas = snodas_swe
         ylabel = "Mean SWE (in)"
         dlabel = "SWE"
         slabel = "WTEQ"
     if stype == "snowdepth":
-        # snodas = snodas_sd
         ylabel = "Mean Snow Depth (in)"
         dlabel = "snow depth"
         slabel = "SNWD"

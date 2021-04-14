@@ -13,8 +13,8 @@ def screen_snodas(db_type, s_date, e_date, basin, aspects=[0, 360],
                   elrange=[0, 20000], slopes=[0, 100]):
 
     bind_dict = {
-        'swe': 'snodas_swe',
-        'snowdepth': 'snodas_sd'
+        'swe': 'swe',
+        'snowdepth': 'sd'
     }
     bind = bind_dict[db_type]
     qry = (
