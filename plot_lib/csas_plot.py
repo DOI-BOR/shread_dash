@@ -70,6 +70,7 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
                 continue
 
             csas_in = csas_f_df.merge(csas_in, left_index=True, right_index=True, how="left")
+            csas_in = csas_in.drop_duplicates()
             if c == "SBSG":
                 csas_f_df[c] = csas_in["FLOW"]
             else:
