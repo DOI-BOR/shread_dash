@@ -1,10 +1,10 @@
 @ECHO OFF
 TITLE "SHREAD View - port 448"
-call :GET_THIS_DIR
-call chdir %THIS_DIR%
-call cd ..\
-set root=.\hdb_env
+set root=C:\ProgramData\Miniconda3
 call %root%\Scripts\activate.bat
+set env=shread_env
+call activate %env%
+call :GET_THIS_DIR
 call chdir %THIS_DIR%
 waitress-serve --port 448 shread_plot:app.server
 pause
