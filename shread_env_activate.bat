@@ -1,8 +1,8 @@
 @ECHO OFF
-TITLE "SHREAD View - port 448"
+TITLE "SHREAD View - port 8010"
 set root=C:\ProgramData\Miniconda3
 call %root%\Scripts\activate.bat
-set env=shread_env
+set env=C:\python_env\shread_env
 call activate %env%
 cmd /k
 

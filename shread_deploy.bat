@@ -1,15 +1,15 @@
 @ECHO OFF
-TITLE "SHREAD View - port 448"
+TITLE "SHREAD View - port 8081"
 set root=C:\ProgramData\Miniconda3
 call %root%\Scripts\activate.bat
-set env=shread_env
+set env=C:\python_env\shread_env
 call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
-waitress-serve --port 448 shread_plot:app.server
+set PYTHONPATH=%THIS_DIR%
+call waitress-serve --port 8081 "shread_plot:app.server"
 pause
 
 :GET_THIS_DIR
-pushd %~dp0
-set THIS_DIR=%CD%
-popd
+set THIS_DIR=%~dp0
+pushd %THIS_DIR%
