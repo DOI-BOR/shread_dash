@@ -1,6 +1,5 @@
-channels:
-  - conda-forge
-  - defaults
+name: shread_env
+
 dependencies:
   - brotli-python=1.0.9=py39h415ef7b_4
   - brotlipy=0.7.0=py39hb82d6ee_1001
@@ -86,3 +85,7 @@ dependencies:
   - yaml=0.2.5=he774522_0
   - zlib=1.2.11=h62dcd97_1010
   - zstd=1.4.9=h6255e5f_0
+  - pip:
+    - dataretrieval
+    - lxml
+

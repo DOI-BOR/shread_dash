@@ -76,10 +76,11 @@ def get_navbar():
                         children=
                         [
                             dbc.DropdownMenuItem("Now", id="set_now"),
+                            dbc.DropdownMenuItem("2022", id="2022_window"),
                             dbc.DropdownMenuItem("2021", id="2021_window"),
-                            dbc.DropdownMenuItem("2019", id="2019_retro"),
-                            dbc.DropdownMenuItem("2017", id="2017_retro"),
-                            dbc.DropdownMenuItem("2012", id="2012_retro"),
+                            #dbc.DropdownMenuItem("2019", id="2019_retro"),
+                            #dbc.DropdownMenuItem("2017", id="2017_retro"),
+                            #dbc.DropdownMenuItem("2012", id="2012_retro"),
                         ],
                     )
                 ]
@@ -132,15 +133,56 @@ def get_layout():
             ),
             dbc.Row(
                 [
-                    dbc.Col(dbc.FormGroup(
+                    dbc.Col(
                         [
-                            html.H4('Select basin:'),
-                            dbc.RadioItems(
-                                id='basin',
-                                options=basin_list,
-                                value=None)
-                        ]
-                    )),
+                            dbc.FormGroup(
+                                [
+                                    html.H4('Select basin:'),
+                                    #dbc.RadioItems(
+                                    #    id='basin',
+                                    #    options=basin_list,
+                                    #    value=None),
+                                    dcc.Dropdown(
+                                        id='basin',
+                                        options=basin_list,
+                                        placeholder="Select basin",
+                                        value=[],
+                                        multi=False),
+                                    dbc.Label('Set basin filters:'),
+                                    dcc.RangeSlider(
+                                        id='elevations',
+                                        min=elevrange[0],
+                                        max=elevrange[1],
+                                        step=1,
+                                        allowCross=False,
+                                        marks=elevdict,
+                                        value=[elevrange[0], elevrange[1]]
+                                    ),
+                                    dcc.RangeSlider(
+                                        id='slopes',
+                                        min=sloperange[0],
+                                        max=sloperange[1],
+                                        step=1,
+                                        allowCross=False,
+                                        marks=slopedict,
+                                        value=[sloperange[0], sloperange[1]]
+                                    ),
+                                    dcc.RangeSlider(
+                                        id='aspects',
+                                        min=-90,
+                                        max=360,
+                                        step=45,
+                                        allowCross=False,
+                                        marks=aspectdict,
+                                        value=[0, 360]
+                                    ),
+                                    html.Div(
+                                        id='mean_elevation'
+                                    )
+                                    ]
+                                ),
+                            ]
+                        ),
                     dbc.Col(dbc.FormGroup(
                         [
                             html.H4('Select time options:'),
@@ -150,16 +192,16 @@ def get_layout():
                                 start_date=start_date,
                                 end_date=end_date,
                             ),
-                            dbc.Button(
-                                "Step 1 day",
-                                id="1step_button",
-                                color="secondary"
-                            ),
-                            dbc.Button(
-                                "Step 1 week",
-                                id="7step_button",
-                            color = "dark"
-                            ),
+                            #dbc.Button(
+                            #    "Step 1 day",
+                            #    id="1step_button",
+                            #    color="secondary"
+                            #),
+                            #dbc.Button(
+                            #    "Step 1 week",
+                            #    id="7step_button",
+                            #color = "dark"
+                            #),
                             html.Div(html.P()),
                             dbc.RadioItems(
                                 id='dtype',
@@ -242,41 +284,6 @@ def get_layout():
     
             dbc.Row(
                 [
-                    dbc.Col(dbc.FormGroup(
-                        [
-                            dbc.Label('Set basin filters:'),
-                            dcc.RangeSlider(
-                                id='elevations',
-                                min=elevrange[0],
-                                max=elevrange[1],
-                                step=1,
-                                allowCross=False,
-                                marks=elevdict,
-                                value=[elevrange[0], elevrange[1]]
-                            ),
-                            dcc.RangeSlider(
-                                id='slopes',
-                                min=sloperange[0],
-                                max=sloperange[1],
-                                step=1,
-                                allowCross=False,
-                                marks=slopedict,
-                                value=[sloperange[0], sloperange[1]]
-                            ),
-                            dcc.RangeSlider(
-                                id='aspects',
-                                min=-90,
-                                max=360,
-                                step=45,
-                                allowCross=False,
-                                marks=aspectdict,
-                                value=[0, 360]
-                            ),
-                            html.Div(
-                                id='mean_elevation'
-                            )
-                        ]
-                    )),
                     dbc.Col(dbc.FormGroup(
                         [
                             dbc.Label('Select point observation sites:'),
@@ -551,44 +558,48 @@ def load_presets(a,b,c,d,e):
 @app.callback(
     Output('date_selection', 'start_date'),
     Output('date_selection', 'end_date'),
-    [Input('2012_retro', 'n_clicks'),
-     Input('2017_retro', 'n_clicks'),
-     Input('2019_retro', 'n_clicks'),
+    [#Input('2012_retro', 'n_clicks'),
+     #Input('2017_retro', 'n_clicks'),
+     #Input('2019_retro', 'n_clicks'),
      Input('set_now', 'n_clicks'),
      Input('2021_window', 'n_clicks'),
-     Input('7step_button','n_clicks'),
-     Input('1step_button','n_clicks'),
+     Input('2022_window', 'n_clicks'),
+     #Input('7step_button','n_clicks'),
+     #Input('1step_button','n_clicks'),
      State('date_selection', 'start_date'),
      State('date_selection', 'end_date')]
 )
-def load_preset_dates(a,b,c,d,e,f,g,start,end):
+def load_preset_dates(a,b,c,start,end):
     """
     :description: this function applies user specified dates based on dropdown menu clicks
     :return: user specified dates
     """
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if '2012_retro' in changed_id:
-        start_date = "2012-02-01"
-        end_date = "2012-02-15"
-    elif '2017_retro' in changed_id:
-        start_date = "2017-03-01"
-        end_date = "2017-03-15"
-    elif '2019_retro' in changed_id:
-        start_date = "2019-03-01"
-        end_date = "2019-03-15"
-    elif '2021_window' in changed_id:
-        start_date = "2021-02-01"
+    # if '2012_retro' in changed_id:
+    #     start_date = "2012-02-01"
+    #     end_date = "2012-02-15"
+    # elif '2017_retro' in changed_id:
+    #     start_date = "2017-03-01"
+    #     end_date = "2017-03-15"
+    # elif '2019_retro' in changed_id:
+    #     start_date = "2019-03-01"
+    #     end_date = "2019-03-15"
+    if '2021_window' in changed_id:
+        start_date = "2021-01-01"
+        end_date = "2021-07-01"
+    elif '2022_window' in changed_id:
+        start_date = "2021-11-01"
         end_date = dt.datetime.now().date() + dt.timedelta(days=10)
-    elif '7step_button' in changed_id:
-        start_date = dt.datetime.strptime(start, "%Y-%m-%d") + dt.timedelta(days=7)
-        start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
-        end_date = dt.datetime.strptime(end, "%Y-%m-%d") + dt.timedelta(days=7)
-        end_date = dt.datetime.strftime(end_date, "%Y-%m-%d")
-    elif '1step_button' in changed_id:
-        start_date = dt.datetime.strptime(start, "%Y-%m-%d") + dt.timedelta(days=1)
-        start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
-        end_date = dt.datetime.strptime(end, "%Y-%m-%d") + dt.timedelta(days=1)
-        end_date = dt.datetime.strftime(end_date, "%Y-%m-%d")
+    # elif '7step_button' in changed_id:
+    #     start_date = dt.datetime.strptime(start, "%Y-%m-%d") + dt.timedelta(days=7)
+    #     start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
+    #     end_date = dt.datetime.strptime(end, "%Y-%m-%d") + dt.timedelta(days=7)
+    #     end_date = dt.datetime.strftime(end_date, "%Y-%m-%d")
+    # elif '1step_button' in changed_id:
+    #     start_date = dt.datetime.strptime(start, "%Y-%m-%d") + dt.timedelta(days=1)
+    #     start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
+    #     end_date = dt.datetime.strptime(end, "%Y-%m-%d") + dt.timedelta(days=1)
+    #     end_date = dt.datetime.strftime(end_date, "%Y-%m-%d")
     else:
         start_date = dt.datetime.now().date() - dt.timedelta(days=10)
         start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
@@ -684,3 +695,10 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.server.run(debug=False)
+
+    @app.after_request
+    def after_request(response):
+        for query in get_debug_queries():
+            if query.duration >= 0:
+                print(query.statement, query.parameters, query.duration, query.context)
+        return response

@@ -277,9 +277,11 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
         csas_df["ALBEDO"] = csas_df["RadDN"] / csas_df["RadUP"]
         csas_df.loc[csas_df["ALBEDO"]>1,'ALBEDO'] = 1
         csas_df.loc[csas_df["ALBEDO"]<0,"ALBEDO"] = 0
+
+    # Clean snow depth
     if "SNWD" in csas_df.columns:
-        csas_df.loc[csas_df["SNWD"]==1,"SNWD"] = np.nan
-        csas_df.loc[csas_df["SNWD"]>109,'SNWD'] = np.nan
+        #csas_df.loc[csas_df["SNWD"]==1,"SNWD"] = np.nan
+        csas_df.loc[csas_df["SNWD"]>109,'SNWD'] = np.nan # 109 is common error value
         csas_df["SNWD"] = csas_df["SNWD"].interpolate(limit=3)
 
     if dtype == "dv":

@@ -10,7 +10,6 @@ import datetime as dt
 from pathlib import Path
 import pandas as pd
 import hydroimport as hydro
-import seaborn as sns
 from flask_sqlalchemy import SQLAlchemy
 import dash_bootstrap_components as dbc
 import dash
@@ -180,10 +179,16 @@ aspectdict = {-90: "W",
               315: "NW",
               360: "N"}
 
+# Define colors:
+# https://colorbrewer2.org/?type=qualitative&scheme=Set1&n=9
+color9 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999']
 # Import USGS gages and define list for dashboard drop down & add colors
 usgs_gages = pd.read_csv(os.path.join(res_dir, "usgs_gages.csv"))
 usgs_gages.index = usgs_gages.site_no
-usgs_gages["color"] = sns.color_palette("colorblind", len(usgs_gages)).as_hex()
+colorg = color9
+while len(colorg)<len(usgs_gages):
+    colorg = colorg*2
+usgs_gages["color"] = colorg[0:len(usgs_gages)]
 
 # Add list for dropdown menu
 usgs_list = list()
@@ -194,8 +199,10 @@ for g in usgs_gages.index:
 # Create list of SNOTEL sites & add colors
 snotel_gages = pd.read_csv(os.path.join(res_dir,"snotel_gages.csv"))
 snotel_gages.index = snotel_gages.triplet
-snotel_gages["color"] = sns.color_palette("colorblind", len(snotel_gages)).as_hex()
-snotel_gages["prcp_color"] = sns.color_palette("pastel", len(snotel_gages)).as_hex()
+colors = color9
+while len(colors)<len(snotel_gages):
+    colors = colors*2
+snotel_gages["color"] = snotel_gages["prcp_color"] = colors[0:len(snotel_gages)]
 
 # Add list for dropdown menu
 snotel_list = list()
@@ -208,7 +215,10 @@ csas_gages = pd.DataFrame()
 csas_gages["site"] = ["SASP","SBSP","PTSP","SBSG"]
 csas_gages["name"] = ["Swamp Angel","Senator Beck","Putney [Meteo]","Senator Beck Gage [Flow]"]
 csas_gages["elev_ft"] = [11060,12186,12323,11030]
-csas_gages["color"] = sns.color_palette("dark", len(csas_gages)).as_hex()
+colorc = color9
+while len(colorc)<len(csas_gages):
+    colorc = colorc*2
+csas_gages["color"] = csas_gages["prcp_color"] = colorc[0:len(csas_gages)]
 csas_gages.index = csas_gages["site"]
 
 csas_list = list()
@@ -243,7 +253,11 @@ else:
     dust_ts = (dust_ts.apply(pd.to_numeric)/2.54)
 
     dust_layers = pd.DataFrame(index=dust_ts.columns)
-    dust_layers["color"] = sns.color_palette("dark", len(dust_layers)).as_hex()
+
+    colord = color9
+    while len(colord) < len(dust_layers):
+        colord = colord * 2
+    dust_layers["color"] = colorc[0:len(dust_layers)]
 
 # Radiative forcing check
 if moddrfs_forc.empty:

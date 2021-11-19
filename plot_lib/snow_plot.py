@@ -11,16 +11,28 @@ from plot_lib.utils import screen_snodas, ba_snodas_stats
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
-def get_basin_stats(snodas_df):
-    
-    snodas_unique = snodas_df.drop_duplicates("OBJECTID")
+def get_basin_stats(snodas_df,stype="swe"):
+    dates = snodas_df["Date"].unique()
+    last_date = dates.max()
+    snodas_unique = snodas_df[snodas_df["Date"]==last_date]
     mean_el = round(snodas_unique["elev_ft"].mean(),0)
     points = len(snodas_unique)
     area = round(points * 0.386102, 0)
-    stats = (
-        f'Mean Elevation: {mean_el} feet & Area: {area} sq.mi. '
-        f'(approximated by {points} points)'
-    )
+
+    if stype=="swe":
+        mean_ft = snodas_unique["mean"].mean()/12
+        vol_af = round(mean_ft*area*640,0)
+        stats = (
+            f'Volume: ~{vol_af:,.0f} acre-feet | '
+            f'Mean Elevation: {mean_el:,.0f} feet & Area: {area:,.0f} sq.mi. | '
+            f'(approximated by {points} points)'
+        )
+    else:
+        stats = (
+            f'Mean Elevation: {mean_el:,.0f} feet & Area: {area:,.0f} sq.mi. |'
+            f'(approximated by {points} points)'
+        )
+
     return stats
 
 def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
@@ -71,7 +83,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             # Calculate basin average values
             ba_snodas = ba_snodas_stats(snodas_df, dates)
             snodas_max = ba_snodas['95%'].max()
-            basin_stats_str = get_basin_stats(snodas_df)
+            basin_stats_str = get_basin_stats(snodas_df,stype)
             
     ## Process SNOTEL data (if selected)
 
