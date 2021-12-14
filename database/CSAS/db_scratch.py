@@ -40,7 +40,7 @@ db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")
 binds = db.get_binds()
 SENSOR = 'csas_dv' # or 'csas_iv'
-s_date = '2020-03-01'
+s_date = '2021-12-03'
 e_date = '2021-12-14'
 
 bind_dict = {

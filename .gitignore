@@ -112,6 +112,7 @@ database/CSAS/*.csv
 database/CSAS/csas_archive/*.csv
 database/SNODAS/*.csv
 database/SNODAS/shread_data/*.csv
+*.tif
 *.db
 *.zip
 database/*.csv

@@ -23,7 +23,6 @@ this_dir = Path(__file__).absolute().resolve().parent
 #this_dir = Path('C:/Programs/shread_plot/database/CSAS')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
-DEFAULT_DATE_FIELD = 'Date'
 DEFAULT_CSV_DIR = Path(this_dir,'csas_archive')
 DEFAULT_DB_DIR = this_dir
 
@@ -249,26 +248,11 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     print('  Success!!!\n')
     return {'csas_iv':df_csas_iv,'csas_dv':df_csas_dv}
 
-def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
-    if not db_path.is_file():
-        return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
-    db_con_str = f'sqlite:///{db_path.as_posix()}'
-    eng = sql.create_engine(db_con_str)
-    with eng.connect() as con:
-        try:
-            unique_dates = pd.read_sql(
-                f'select distinct {date_field} from {tbl_name}',
-                con
-            ).dropna()
-        except Exception:
-            return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
-    return pd.to_datetime(unique_dates[date_field])
-
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
               zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
     sensor = df.name
     print(f'Creating sqlite db for {df.name}...\n')
-    print('  Getting unique basin names...')
+    print('  Getting unique site names...')
     basin_list = pd.unique(df['site'])
     db_name = f"{sensor}.db"
     db_path = Path(db_path, db_name)
@@ -277,37 +261,30 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
     print(f"  Writing {db_path}...")
     df_basin = None
     con = None
-    for basin in basin_list:
+    for site in basin_list:
         if verbose:
-            print(f'    Getting data for {basin}...')
-        df_basin = df[df['site'] == basin]
+            print(f'    Getting data for {site}...')
+        df_basin = df[df['site'] == site]
         if df_basin.empty:
             if verbose:
-                print(f'      No data for {basin}...')
+                print(f'      No data for {site}...')
             continue
         
-        basin_id = basin
-        if if_exists == 'append' and check_dups:
-            if verbose:
-                print(f'      Checking for duplicate data in {basin}...')
-            drop_dates = get_unique_dates(basin_id, db_path)
-            initial_len = len(df_basin.index)
-            df_basin = df_basin[~df_basin['Date'].isin(drop_dates)]
-            if verbose:
-                print(f'        Prevented {initial_len - len(df_basin.index)} duplicates')
+        site_id = site
+
         if verbose:
-            print(f'      Writting {basin} to {db_name}...')
+            print(f'      Writing {site} to {db_name}...')
         try:
             con = sqlite3.connect(db_path)
             df_basin.to_sql(
-                basin_id, 
+                site_id,
                 con, 
                 if_exists=if_exists,
                 chunksize=10000,
                 method='multi'
             )
         except sqlite3.Error as e:
-            print(f'      Error - did not write {basin_id} table to {db_name} - {e}')
+            print(f'      Error - did not write {site_id} table to {db_name} - {e}')
         finally:
             if con:
                 con.close()
@@ -329,7 +306,7 @@ def parse_args():
     )
     parser.add_argument(
         "-i", "--input", 
-        help=f"override default SHREAD data input dir ({DEFAULT_CSV_DIR})",
+        help=f"override default csas data input dir ({DEFAULT_CSV_DIR})",
         default=DEFAULT_CSV_DIR
     )
     parser.add_argument(
@@ -340,7 +317,7 @@ def parse_args():
     parser.add_argument(
         "-e", "--exists", 
         help="behavior if database table exists already",
-        choices=['replace', 'append', 'fail'], default='append'
+        choices=['replace', 'fail'], default='replace'
     )
     parser.add_argument(
         "-c", "--check_dups", 

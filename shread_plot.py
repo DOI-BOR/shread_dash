@@ -27,7 +27,7 @@ from plot_lib.utils import get_plot_config
 from plot_lib.snow_plot import get_snow_plot
 from plot_lib.met_plot import get_met_plot
 from plot_lib.flow_plot import get_flow_plot
-from plot_lib.csas_plot import get_csas_plot
+from plot_lib.csas_plot import get_csas_plot,get_csas_plot2
 
 app = database.app
 
@@ -716,7 +716,7 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_
     ])
 def update_csas_plot2(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_clicks):
 
-    fig,message,csas_color = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
+    fig = get_csas_plot2(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
 
     return fig
 
