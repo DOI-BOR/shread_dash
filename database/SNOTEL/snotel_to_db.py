@@ -347,7 +347,7 @@ if __name__ == '__main__':
     print(args)
 
     if args.version:
-        print('snotel_to_db.py v1.0')
+        print('usgs_to_db.py v1.0')
     
     for arg_path in [args.input, args.output]:
         if not Path(arg_path).is_dir():
