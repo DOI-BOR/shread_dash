@@ -5,9 +5,9 @@ import numpy as np
 import plotly.graph_objects as go
 import hydroimport as hydro
 
-from database import snotel_gages, SBSP_iv, SBSP_dv, SASP_iv, SASP_dv
-from database import csas_gages, dust_ts, dust_layers
-from plot_lib.utils import screen_snodas, ba_snodas_stats
+from database import snotel_gages
+from database import csas_gages
+from plot_lib.utils import screen_snodas, ba_snodas_stats, screen_csas
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
@@ -36,7 +36,7 @@ def get_basin_stats(snodas_df,stype="swe"):
     return stats
 
 def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
-                     end_date, snotel_sel):
+                     end_date, snotel_sel,csas_sel,plot_albedo):
     """
     :description: this function updates the snowplot
     :param basin: the selected basins (checklist)
@@ -47,6 +47,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     :param start_date: start date (from date selector)
     :param end_date: end date (from date selector)
     :param snotel_sel: list of selected snotel sites ([])
+    :param albedo: boolean
     :return: update figure
     """
     # Create date axis
@@ -61,7 +62,6 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         ylabel = "Mean Snow Depth (in)"
         dlabel = "snow depth"
         slabel = "SNWD"
-
 
     ## Process SNODAS data
     # Filter data
@@ -103,8 +103,17 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     else:
         snotel_max = snotel_s_df.max().max()
 
+    ## Process CSAS data (if selected)
+    csas_a_df = pd.DataFrame()
+
+    for site in csas_sel:
+        csas_df = screen_csas("dv", site, start_date, end_date)
+
+        if (site != "SBSG") or (site != "PTSP"):
+            csas_a_df[site] = csas_df["albedo"]
+
     ### Plot the data
-    ymax = max([snodas_max, snotel_max, 20]) * 1.25
+    ymax = max([snodas_max,snotel_max,20]) * 1.25
 
     print("Updating snow plot...")
     fig = go.Figure()
@@ -123,6 +132,17 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             mode='lines',
             line=dict(color=snotel_gages.loc[s, "color"]),
             name=name_df.loc[s, "name"]))
+
+    if plot_albedo == True:
+        for c in csas_a_df.columns:
+            fig.add_trace(go.Scatter(
+                x=csas_a_df.index,
+                y=(1-csas_a_df[c])*100,
+                text="100% - Albedo",
+                mode='lines',
+                line=dict(color=csas_gages.loc[c, "color"], dash="dash"),
+                name=c + " 100% - Albedo",
+                yaxis="y2"))
 
     fig.add_trace(shade_forecast(ymax))
     fig.update_layout(
@@ -146,6 +166,15 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         hovermode='closest',
         plot_bgcolor='white',
     )
+    if plot_albedo == True:
+        fig.update_layout(
+            yaxis2=dict(
+                title="100% - Albedo",
+                side="right",
+                overlaying='y',
+                range=[0, 100]),
+            margin={'l': 40, 'b': 40, 't': 0, 'r': 40},
+        )
     print('snow plot is done')
     
     if snodas_plot:

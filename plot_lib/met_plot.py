@@ -3,22 +3,20 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_snotel,import_csas_live
+from hydroimport import import_snotel
 
 from database import snotel_gages
-from database import  SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, PTSP_dv, PTSP_iv
-from database import csas_gages, moddrfs_forc
+from database import csas_gages
 
 from plot_lib.utils import screen, ba_stats, screen_csas
 from plot_lib.utils import ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
-def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date, 
+def get_met_plot(basin, elrange, aspects, slopes, start_date,
                  end_date, snotel_sel, csas_sel, plot_albedo, dtype):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
-    :param plot_forc: boolean, plot radiative forcing dataset
     :param elrange: the range of elevations ([min,max])
     :param aspects: the range of aspects  ([min,max])
     :param slopes: the range of slopes ([min,max])
@@ -50,23 +48,6 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     nws_p_max = nws_p_df.max().max()
     ylabel2 = "Inc. Precip (in)"
     print("NWS Precip not yet added")
-
-    ## Process Radiative Forcing Data
-    if plot_forc == True:
-        forc = moddrfs_forc
-
-        # Assign Labels
-        flabel = "Radiative Forcing"
-        ylabel = ylabel + " | Forcing [W/m^2]"
-
-        # Screen by basin location
-        forc_df = screen(forc, basin, aspects, elrange, slopes)
-        ba_forc = ba_stats(forc_df,dates)
-
-        # Calculate maximum value (for plotting axis)
-        forc_max = ba_forc.max().max()
-    else:
-        forc_max = np.nan
 
     ## Process SNOTEL data (if selected)
     if len(snotel_sel) > 0:
@@ -117,7 +98,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
 
     # Calculate plotting axes values
     ymin = np.nanmin([nws_t_min, snotel_t_min, 0])
-    ymax = np.nanmax([nws_t_max, snotel_t_max, forc_max, csas_max, freeze]) * 1.25
+    ymax = np.nanmax([nws_t_max, snotel_t_max, csas_max, freeze]) * 1.25
     ymax2 = np.nanmax([nws_p_max, snotel_p_max, 0.2]) * 5
 
     # Create figure
@@ -154,11 +135,6 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
         name="NWS Mean Precip for selection",
         yaxis="y2"
     ))
-
-
-    if plot_forc == True:
-        fig.add_trace(ba_mean_plot(ba_forc, flabel, color="green"))
-        fig.add_trace(ba_median_plot(ba_forc, flabel, color="green"))
 
     for s in snotel_sel:
         fig.add_trace(go.Bar(

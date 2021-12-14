@@ -8,7 +8,6 @@ import plotly.graph_objects as go
 import hydroimport as hydro
 import dataretrieval.nwis as nwis
 
-from database import  SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, SBSG_dv, SBSG_iv
 from database import csas_gages, usgs_gages
 
 from plot_lib.utils import shade_forecast,screen_csas

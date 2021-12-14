@@ -97,9 +97,6 @@ csas_dir = os.path.join(app_dir, 'database', 'CSAS')
 csas_files = os.listdir(csas_dir)
 res_dir = os.path.join(app_dir, 'resources')
 
-# Identify dataframes used in dashboard
-moddrfs_forc = pd.DataFrame()
-
 ### Import Database Data ###
 # Parse files (select csv files, open, append date, append to database)
 for data_file in csas_files:
@@ -265,13 +262,6 @@ else:
     while len(colord) < len(dust_layers):
         colord = colord * 2
     dust_layers["color"] = colorc[0:len(dust_layers)]
-
-# Radiative forcing check
-if moddrfs_forc.empty:
-    forc_disable = True
-else:
-    forc_disable = False\
-
 
 # set initial start and end date
 start_date = dt.datetime.now().date() - dt.timedelta(days=10)
