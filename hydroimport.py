@@ -128,7 +128,7 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
             if "not found on this server" in csv_str:
                 print("Site URL incorrect.")
                 return
-        
+
         csv_io = StringIO(csv_str)
         f = pd.read_json(csv_io, orient="index")
 
@@ -293,29 +293,3 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
         csas_out = csas_out.tz_localize("America/Denver")
 
     return(csas_out)
-
-
-# FOR TESTING
-# sx = time.perf_counter()
-# for s in snotel_gages.index:
-#     print(s)
-#     site_triplet = s#'380_CO_SNTL'
-#     vars = ["WTEQ","SNWD","PREC","TAVG"]
-#     start_date = "2021-01-01"
-#     end_date = "2021-01-31"
-#     dtype = "iv"
-#     x = import_snotel(site_triplet,start_date,end_date,vars,dtype,verbose=False)
-#     print(s)
-#
-# sx = time.perf_counter() - sx
-# print(sx)
-#
-#
-# site = "ARFNd5"
-# y = import_rfc(site,dtype)
-# #
-# start_date = "2021-04-01"
-# end_date = "2021-04-14"
-# dtype = "iv"
-# site = "PTSP"
-# z = import_csas_live(site,start_date,end_date,dtype)

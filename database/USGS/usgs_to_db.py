@@ -26,17 +26,75 @@ ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_CSV_DIR = Path(this_dir,'csas_archive')
 DEFAULT_DB_DIR = this_dir
 
-def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
-                 seconds=None, milliseconds=None, microseconds=None, nanoseconds=None):
-    years = np.asarray(years) - 1970
-    months = np.asarray(months) - 1
-    days = np.asarray(days) - 1
-    types = ('<M8[Y]', '<m8[M]', '<m8[D]', '<m8[W]', '<m8[h]',
-             '<m8[m]', '<m8[s]', '<m8[ms]', '<m8[us]', '<m8[ns]')
-    vals = (years, months, days, weeks, hours, minutes, seconds,
-            milliseconds, microseconds, nanoseconds)
-    return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
-               if v is not None)
+def import_nwis():
+    #TODO write this code!!!
+
+def import_rfc(site, dtype, rfc = "cbrfc", verbose=False):
+    """Download NWS RFC flow data
+
+    Parameters
+    ---------
+        site: five digit site identifier
+        start_date: datetime
+        end_date: datetime
+        time_int: text
+        verbose: boolean
+            True : enable print during function run
+
+    Returns
+    -------
+        dataframe
+
+    """
+    if dtype == "dv":
+        ext = ".fflw24.csv"
+    if dtype == "iv":
+        ext = ".fflw1.csv"
+
+    site_url = "https://www."+rfc+".noaa.gov/product/hydrofcst/RVFCSV/"+site+ext
+
+    try:
+        csv_str = r_get(site_url, timeout=10).text
+    except TimeoutError:
+        raise Exception("Timeout; Data unavailable?")
+    if "not found on this server" in csv_str:
+        print("Site URL incorrect.")
+        return None
+
+    csv_io = StringIO(csv_str)
+    rfc_in = csv_io.readlines()
+    rfc_dat = pd.DataFrame()
+    data=False
+    i = 0
+    for line in range(0, len(rfc_in)):
+        text = str(rfc_in[line])
+        text = text.rstrip()
+        if text[:4] == "DATE":
+            columns = text.split(",")
+            data=True
+            if verbose == True:
+                print(columns)
+            continue
+        if data==True:
+            vals = text.split(",")
+            if verbose == True:
+                print(vals)
+            for col in range(0, len(columns)):
+                rfc_dat.loc[i, columns[col]] = vals[col]
+            i = i + 1
+
+    rfc_dat["DATE"] = pd.to_datetime(rfc_dat["DATE"])
+    rfc_dat["FLOW"] = pd.to_numeric(rfc_dat["FLOW"])
+
+    for i in rfc_dat.index:
+        rfc_dat.loc[i,"datetime"] = rfc_dat.loc[i,"DATE"]+dt.timedelta(hours=int(rfc_dat.loc[i,"TIME"].strip("Z")))
+
+    rfc_dat.index = rfc_dat.datetime
+    rfc_dat = rfc_dat.drop(columns=["DATE","TIME","datetime"])
+    rfc_dat = rfc_dat.tz_localize("UTC")
+
+    return(rfc_dat)
+
 
 def process_csas_archive(data_dir=this_dir,csas_archive=DEFAULT_CSV_DIR,verbose=False):
 
