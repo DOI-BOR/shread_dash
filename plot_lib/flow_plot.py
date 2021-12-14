@@ -11,7 +11,7 @@ import dataretrieval.nwis as nwis
 from database import  SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, SBSG_dv, SBSG_iv
 from database import csas_gages, usgs_gages
 
-from plot_lib.utils import shade_forecast
+from plot_lib.utils import shade_forecast,screen_csas
 
 def get_log_scale_dd(ymax):
     log_scale_dd = [
@@ -154,68 +154,20 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
 
 
     ## Process CSAS data (if selected)
-    # TODO: handle current year csas met data
-    if start_date>"2020-12-30":
-        csas_sel=[]
+    csas_f_df = pd.DataFrame()
+    csas_a_df = pd.DataFrame()
 
-    if len(csas_sel) > 0:
-        if plot_albedo != True:
-            for sp in ["SASP","SBSP"]:
-                if sp in csas_sel:
-                    csas_sel.remove(sp)
-        for sp in ["PTSP"]:
-            if sp in csas_sel:
-                csas_sel.remove(sp)
+    for site in csas_sel:
+        csas_df = screen_csas(dtype, site, start_date, end_date)
 
-    if dtype == "dv":
-        cdates = pd.date_range(start_date, end_date, freq="D",tz="UTC")
-    if dtype == "iv":
-        cdates = pd.date_range(start_date, end_date, freq="H",tz="UTC")
+        if site == "SBSG":
+            csas_f_df[site] = csas_df["flow"]
+        elif site != "PTSP":
+            csas_a_df[site] = csas_df["albedo"]
 
-    csas_f_df = pd.DataFrame(index=cdates)
-    if plot_albedo == True:
-        csas_a_df = pd.DataFrame(index=cdates)
 
-    for c in csas_sel:
-        if c == "SASP":
-            if dtype == "dv":
-                csas_in = SASP_dv
-            if dtype == "iv":
-                csas_in = SASP_iv
-        if c == "SBSP":
-            if dtype == "dv":
-                csas_in = SBSP_dv
-            if dtype == "iv":
-                csas_in = SBSP_iv
-        if c == "SBSG":
-            if dtype == "dv":
-                csas_in = SBSG_dv
-            if dtype == "iv":
-                csas_in = SBSG_iv
-
-        csas_in = csas_f_df.merge(csas_in, left_index=True, right_index=True, how="left")
-        if c == "SBSG":
-            csas_f_df[c] = csas_in["Discharge_CFS"]
-        else:
-            if plot_albedo == True:
-                csas_a_df[c] = csas_in["PyDwn_Unfilt_W"] / csas_in["PyUp_Unfilt_W"]
-                csas_a_df.loc[csas_a_df[c] > 1, c] = 1
-                csas_a_df.loc[csas_a_df[c] < 0, c] = 0
-
-    if len(csas_sel) == 0:
-        csas_f_max = np.nan
-        csas_a_max = np.nan
-        print("No CSAS flow or albedo sites selected.")
-    else:
-        csas_f_max = csas_f_df.max().max()
-        csas_a_max = np.nan
-        if plot_albedo == True:
-            csas_a_df = (1 - csas_a_df) * 100  # Invert and convert to percent
-            csas_a_max = csas_a_df.max().max()
-            # print("A")
-            # print(csas_a_df)
-    ymax = np.nanmax([usgs_f_max,csas_f_max]) * 1.25
-
+    csas_max = np.nanmax([csas_f_df.max().max(),csas_a_df.max().max()])
+    ymax = np.nanmax([usgs_f_max,csas_max]) * 1.25
 
     print("Updating flow plot...")
 
@@ -243,7 +195,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
         for c in csas_a_df.columns:
             fig.add_trace(go.Scatter(
                 x=csas_a_df.index,
-                y=csas_a_df[c],
+                y=(1-csas_a_df[c])*100,
                 text="100% - Albedo",
                 mode='lines',
                 line=dict(color=csas_gages.loc[c, "color"],dash="dash"),

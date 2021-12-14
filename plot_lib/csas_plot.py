@@ -294,7 +294,7 @@ def get_csas_plot2(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo
         for c in csas_a_df.columns:
             fig.add_trace(go.Scatter(
                 x=csas_a_df.index,
-                y=csas_a_df[c],
+                y=(1-csas_a_df[c])*100,
                 text="100% - Albedo",
                 mode='lines',
                 line=dict(color=csas_gages.loc[c, "color"], dash="dash"),

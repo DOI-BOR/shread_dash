@@ -478,27 +478,27 @@ app.layout = get_layout()
 #                                                unixToDatetime(value[1])]}}
 #     return(snow_fig,met_fig,flow_fig)
 
-@app.callback(
-    Output('csas_sel', 'disabled'),
-    Output('plot_albedo_flow', 'disabled'),
-    Output('plot_albedo_met', 'disabled'),
-    Output('plot_dust', 'disabled'),
-    Output('plot_albedo_csas','disabled'),
-    [Input('date_selection', 'start_date'),
-     Input('date_selection', 'end_date')]
-)
-def disable_csas(start_date,end_date):
-    """
-    :description: this function disables CSAS data for the current year...the csas website is too inconsistent to include.
-    :param start_date: the start date selected
-    :param end_date: the end date selected
-    :return: series of booleans (True/False)
-    """
-    if (start_date>"2020-12-30") & (end_date>"2020-12-30"):
-        print("csas disabled.")
-        return(False,True,True,False,False)
-    if (start_date<="2020-12-30") & (end_date<="2020-12-30"):
-        return(False,False,False,False,False)
+# @app.callback(
+#     Output('csas_sel', 'disabled'),
+#     Output('plot_albedo_flow', 'disabled'),
+#     Output('plot_albedo_met', 'disabled'),
+#     Output('plot_dust', 'disabled'),
+#     Output('plot_albedo_csas','disabled'),
+#     [Input('date_selection', 'start_date'),
+#      Input('date_selection', 'end_date')]
+# )
+# def disable_csas(start_date,end_date):
+#     """
+#     :description: this function disables CSAS data for the current year...the csas website is too inconsistent to include.
+#     :param start_date: the start date selected
+#     :param end_date: the end date selected
+#     :return: series of booleans (True/False)
+#     """
+#     if (start_date>"2020-12-30") & (end_date>"2020-12-30"):
+#         print("csas disabled.")
+#         return(False,True,True,False,False)
+#     if (start_date<="2020-12-30") & (end_date<="2020-12-30"):
+#         return(False,False,False,False,False)
 
 @app.callback(
     Output('plot_forecast', 'disabled'),
