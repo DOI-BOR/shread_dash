@@ -4,7 +4,7 @@ Created on Wed Dec 23 16:35:45 2020
 @author: tclarkin
 """
 ### Import Dependencies & Define Functions
-					
+
 import os
 import json
 import datetime as dt
@@ -78,9 +78,6 @@ def get_navbar():
                             dbc.DropdownMenuItem("Now", id="set_now"),
                             dbc.DropdownMenuItem("2022", id="2022_window"),
                             dbc.DropdownMenuItem("2021", id="2021_window"),
-                            #dbc.DropdownMenuItem("2019", id="2019_retro"),
-                            #dbc.DropdownMenuItem("2017", id="2017_retro"),
-                            #dbc.DropdownMenuItem("2012", id="2012_retro"),
                         ],
                     )
                 ]
@@ -138,10 +135,6 @@ def get_layout():
                             dbc.FormGroup(
                                 [
                                     html.H4('Select basin:'),
-                                    #dbc.RadioItems(
-                                    #    id='basin',
-                                    #    options=basin_list,
-                                    #    value=None),
                                     dcc.Dropdown(
                                         id='basin',
                                         options=basin_list,
@@ -270,7 +263,7 @@ def get_layout():
                     ))
                 ]
             ),
-    
+
             dbc.Row(
                 [
                     dbc.Col(dbc.FormGroup(
@@ -350,23 +343,6 @@ def get_layout():
                     ))
                 ]
             ),
-            # In development
-            # dbc.Row(
-            #     [
-            #         dbc.Col(dbc.FormGroup(
-            #             [
-            #                 dcc.RangeSlider(
-            #                     id='sync_pan',
-            #                     min=unixTimeMillis(start_date),
-            #                     max=unixTimeMillis(end_date),
-            #                     value=[unixTimeMillis(start_date),unixTimeMillis(end_date)],
-            #                     step=86400000,
-            #                     marks=getMarks(start_date,end_date)
-            #                     )
-            #             ]
-            #         ))
-            #     ]
-            # )
         ]
     )
 
@@ -481,11 +457,11 @@ def load_preset_dates(a,b,c,start,end):
         Input('csas_sel','value'),
         Input('plot_albedo_snow','checked')
     ])
-def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
+def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
                      end_date, snotel_sel,csas_sel,plot_albedo):
-   
+
     fig, basin_stats = get_snow_plot(
-        basin, stype, elrange, aspects, slopes, start_date, 
+        basin, stype, elrange, aspects, slopes, start_date,
         end_date, snotel_sel,csas_sel,plot_albedo
     )
     return fig, basin_stats
@@ -506,7 +482,7 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     ])
 def update_met_plot(basin, elrange, aspects, slopes, start_date,
                     end_date, snotel_sel, csas_sel, plot_albedo, dtype):
-    
+
     fig = get_met_plot(
         basin, elrange, aspects, slopes, start_date,
         end_date, snotel_sel, csas_sel, plot_albedo, dtype

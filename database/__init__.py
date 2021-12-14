@@ -54,40 +54,6 @@ app = create_app()
 db = SQLAlchemy(app.server)
 db.reflect()
 
-# Define Functinos
-def db_import(data_file):
-    """
-    # Function to import csv db files
-    :param data_file: the file path
-    :return: df, database in a date indexed dataframe
-    """
-    db = pd.read_csv(data_file)
-    db.index = pd.to_datetime(db.Date)
-    db = db.tz_localize("UTC")
-
-    return (db)
-
-
-# Function to import csv db files
-def csas_db_import(data_file, dtype, db_dir=this_dir):
-    """
-    # Function to import CSAS db data
-    :param data_file: the file path
-    :param type: :dv: or :iv:, time step
-    :return: df, database in a date indexed dataframe
-    """
-    data_path = Path(db_dir, 'CSAS', data_file)
-    db = pd.read_csv(data_path)
-    if dtype == "24hr":
-        dates = hydro.compose_date(years=db.Year,days=db.DOY)
-    if dtype == "1hr":
-        dates = hydro.compose_date(years=db.Year, days=db.DOY,hours=db.Hour/100)
-
-    db.index = dates
-    db = db.tz_localize("UTC")
-
-    return (db)
-
 ### Begin User Input Data
 # Define working (data) directory
 os.chdir(os.path.join(app_dir, 'database'))
@@ -96,42 +62,6 @@ os.chdir(os.path.join(app_dir, 'database'))
 csas_dir = os.path.join(app_dir, 'database', 'CSAS')
 csas_files = os.listdir(csas_dir)
 res_dir = os.path.join(app_dir, 'resources')
-
-### Import Database Data ###
-# Parse files (select csv files, open, append date, append to database)
-for data_file in csas_files:
-    if "zip" in data_file:
-        continue
-    if ".db" in data_file:
-        continue
-    if ".py" in data_file:
-        continue
-    if "db" in data_file:
-        data_file_split = data_file.split("_")
-        source = data_file_split[0]
-        datatype = data_file_split[1]
-
-        if source == "SBSP":
-            if datatype == "1hr":
-                SBSP_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                SBSP_dv = csas_db_import(data_file, datatype)
-        if source == "SASP":
-            if datatype == "1hr":
-                SASP_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                SASP_dv = csas_db_import(data_file, datatype)
-        if source == "PTSP":
-            if datatype == "1hr":
-                PTSP_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                PTSP_dv = csas_db_import(data_file, datatype)
-        if source == "SBSG":
-            if datatype == "1hr":
-                SBSG_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                SBSG_dv = csas_db_import(data_file, datatype)
-        print("Importing {} from {}".format(datatype, source))
 
 #switch working dir back to main dir so dash app can function correctly
 os.chdir(app_dir)	  
@@ -153,19 +83,13 @@ basin_list = [
     {'label': 'LOS PINOS - NR BAYFIELD VALLECITO RES', 'value': 'VCRC2H_F'}
 ]
 # Set ranges of variables for use in dashboard
-# max_el = pd.read_sql('select max(elev_ft) from sd', db.engine).iloc[0][0]
-# min_el = pd.read_sql('select min(elev_ft) from sd', db.engine).iloc[0][0]
-# elevrange = [min_el, max_el]
-elevrange =[6079.0, 13924.0]
+elevrange =[5000, 15000]
 print(f'  Elevations from {elevrange[0]} to {elevrange[-1]}')
 elevdict = dict()
 for e in range(1, 20):
     elevdict[str(e * 1000)] = f"{e * 1000:,}'"
 
-# max_slope = pd.read_sql('select max(slope_d) from sd', db.engine).iloc[0][0]
-# min_slope = pd.read_sql('select min(slope_d) from sd', db.engine).iloc[0][0]
-# sloperange = [min_slope, max_slope]
-sloperange = [0.0, 79.0]
+sloperange = [0.0, 100]
 print(f'  Slopes from {sloperange[0]} to {sloperange[-1]}')
 slopedict = dict()
 for s in range(0, 11):
@@ -226,19 +150,9 @@ csas_gages["color"] = csas_gages["prcp_color"] = colorc[0:len(csas_gages)]
 csas_gages.index = csas_gages["site"]
 
 csas_list = list()
-csas_db = list()
-
 for c in csas_gages.index:
     csas_list.append({"label": csas_gages.name[c] + " (" + str(
         round(csas_gages.elev_ft[c], 0)) + " ft)", "value": c})
-    if c == "SBSP":
-        csas_db.append({"value": c, "daily": SBSP_dv, "inst": SBSP_iv})
-    if c == "SASP":
-        csas_db.append({"value": c, "daily": SASP_dv, "inst": SASP_iv})
-    if c == "PTSP":
-        csas_db.append({"value": c, "daily": PTSP_dv, "inst": PTSP_iv})
-    if c == "SBSG":
-        csas_db.append({"value": c, "daily": SBSG_dv, "inst": SBSG_iv})
 
 # Import CSAS dust on snow data
 try:
