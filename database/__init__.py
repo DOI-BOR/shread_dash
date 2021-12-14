@@ -2,7 +2,7 @@
 """
 Created on Sun Mar 21 11:55:27 2021
 
-@author: buriona
+@author: buriona, tclarkin
 """
 
 import os
@@ -17,6 +17,10 @@ import dash
 this_dir = os.path.dirname(os.path.realpath(__file__))
 app_dir = os.path.dirname(this_dir)
 
+#this_dir = os.path.dirname(os.path.realpath(__file__))
+this_dir = Path('C:/Programs/shread_plot/database')
+app_dir = os.path.dirname(this_dir)
+
 def create_app():
     assets_path = Path(app_dir, 'assets')
     app = dash.Dash(
@@ -28,17 +32,20 @@ def create_app():
     )
     app.title="WCAO Dashboard"
     db_path = Path(app_dir, 'database')
-    #snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
     snodas_swe_db_path = Path(db_path, 'SNODAS', 'swe.db')
     snodas_sd_db_path = Path(db_path, 'SNODAS', 'sd.db')
-    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
+    csas_iv_db_path = Path(db_path, 'CSAS', 'csas_iv.db')
+    csas_dv_db_path = Path(db_path, 'CSAS', 'csas_dv.db')
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
+    csas_iv_db_con_str = f'sqlite:///{csas_iv_db_path.as_posix()}'
+    csas_dv_db_con_str = f'sqlite:///{csas_dv_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
         'swe': snodas_swe_db_con_str,
-        'sd': snodas_sd_db_con_str
+        'sd': snodas_sd_db_con_str,
+        'csas_iv':csas_iv_db_con_str,
+        'csas_dv':csas_dv_db_con_str
     }
 
     return app

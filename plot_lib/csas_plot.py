@@ -202,3 +202,4 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype,plot_albedo):
     print('csas plot is done')
     
     return fig,csas_message,csas_color
+

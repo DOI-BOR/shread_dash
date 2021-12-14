@@ -365,6 +365,18 @@ def get_layout():
                 [
                     dbc.Col(dbc.FormGroup(
                         [
+                            dcc.Graph(
+                                id='csas_plot2',
+                                config=get_plot_config("dashboard_csas.jpg")
+                            ),
+                        ]
+                    ))
+                ]
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(dbc.FormGroup(
+                        [
                             dbc.Button(
                                 "Retry CSAS",
                                 id="csas_replot",
@@ -690,6 +702,23 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_
     fig,message,csas_color = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
 
     return fig,message,csas_color
+
+@app.callback(
+    Output('csas_plot2', 'figure'),
+    [
+        Input('date_selection', 'start_date'),
+        Input('date_selection', 'end_date'),
+        Input('plot_dust',"checked"),
+        Input('csas_sel', 'value'),
+        Input('dtype', 'value'),
+        Input('plot_albedo_csas','checked'),
+        Input('csas_replot','n_clicks'),
+    ])
+def update_csas_plot2(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_clicks):
+
+    fig,message,csas_color = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
+
+    return fig
 
 ### LAUNCH
 if __name__ == '__main__':
