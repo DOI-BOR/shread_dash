@@ -5,9 +5,9 @@ import numpy as np
 import plotly.graph_objects as go
 import hydroimport as hydro
 
-from database import snotel_gages
+from database import snotel_sites
 from database import csas_gages
-from plot_lib.utils import screen_snodas, ba_snodas_stats, screen_csas
+from plot_lib.utils import screen_snodas,ba_snodas_stats,screen_csas,screen_snotel
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
@@ -35,8 +35,8 @@ def get_basin_stats(snodas_df,stype="swe"):
 
     return stats
 
-def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
-                     end_date, snotel_sel,csas_sel,plot_albedo):
+def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
+                     end_date, snotel_sel,csas_sel,plot_albedo,offline=True):
     """
     :description: this function updates the snowplot
     :param basin: the selected basins (checklist)
@@ -91,9 +91,12 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     snotel_s_df = pd.DataFrame(index=dates)
     name_df = pd.DataFrame(index=snotel_sel)
     for s in snotel_sel:
-        name_df.loc[s, "name"] = str(snotel_gages.loc[s, "site_no"]) + " " + snotel_gages.loc[s, "name"] + " (" + str(
-            round(snotel_gages.loc[s, "elev_ft"], 0)) + " ft)"
-        snotel_in = hydro.import_snotel(s, start_date, end_date, vars=[slabel])
+        name_df.loc[s, "name"] = str(snotel_sites.loc[s, "site_no"]) + " " + snotel_sites.loc[s, "name"] + " (" + str(
+            round(snotel_sites.loc[s, "elev_ft"], 0)) + " ft)"
+        if offline:
+            snotel_in = screen_snotel(f"snotel_{s}", start_date, end_date)
+        else:
+            snotel_in = hydro.import_snotel(s, start_date, end_date, vars=[slabel])
         snotel_in = snotel_s_df.merge(snotel_in[slabel], left_index=True, right_index=True, how="left")
         snotel_s_df.loc[:, s] = snotel_in[slabel]
 
@@ -130,7 +133,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             y=snotel_s_df[s],
             text=ylabel,
             mode='lines',
-            line=dict(color=snotel_gages.loc[s, "color"]),
+            line=dict(color=snotel_sites.loc[s, "color"]),
             name=name_df.loc[s, "name"]))
 
     if plot_albedo == True:

@@ -19,17 +19,14 @@ def create_app(db_path):
     app = dash.Dash(
         __name__,
     )
-    #snodas_all_db_path = Path(db_path, 'snodas.db')
-    snodas_csas1_db_path = Path(db_path, 'csas_iv.db')
-    snodas_csas24_db_path = Path(db_path, 'csas_dv.db')
-    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
-    snodas_csas1_db_con_str = f'sqlite:///{snodas_csas1_db_path.as_posix()}'
-    snodas_csas24_db_con_str = f'sqlite:///{snodas_csas24_db_path.as_posix()}'
+    csas_iv_db_path = Path(db_path, 'csas_iv.db')
+    csas_dv_db_path = Path(db_path, 'csas_dv.db')
+    csas_iv_db_con_str = f'sqlite:///{csas_iv_db_path.as_posix()}'
+    csas_dv_db_con_str = f'sqlite:///{csas_dv_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
-        'csas_iv': snodas_csas1_db_con_str,
-        'csas_dv': snodas_csas24_db_con_str
+        'csas_iv': csas_iv_db_con_str,
+        'csas_dv': csas_dv_db_con_str
     }
 
     return app

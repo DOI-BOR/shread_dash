@@ -5,15 +5,15 @@ import numpy as np
 import plotly.graph_objects as go
 from hydroimport import import_snotel
 
-from database import snotel_gages
+from database import snotel_sites
 from database import csas_gages
 
-from plot_lib.utils import screen, ba_stats, screen_csas
+from plot_lib.utils import screen,ba_stats,screen_csas,screen_snotel
 from plot_lib.utils import ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
 def get_met_plot(basin, elrange, aspects, slopes, start_date,
-                 end_date, snotel_sel, csas_sel, plot_albedo, dtype):
+                 end_date, snotel_sel, csas_sel, plot_albedo, dtype,offline=True):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
@@ -59,11 +59,14 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
 
         for s in snotel_sel:
             # Add name to name_df
-            name_df.loc[s, "name"] = str(snotel_gages.loc[s, "site_no"]) + " " + snotel_gages.loc[
-                s, "name"] + " (" + str(round(snotel_gages.loc[s, "elev_ft"], 0)) + " ft)"
+            name_df.loc[s, "name"] = str(snotel_sites.loc[s, "site_no"]) + " " + snotel_sites.loc[
+                s, "name"] + " (" + str(round(snotel_sites.loc[s, "elev_ft"], 0)) + " ft)"
 
             # Import SNOTEL data
-            snotel_in = import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
+            if offline:
+                snotel_in = screen_snotel(f"snotel_{s}", start_date, end_date)
+            else:
+                snotel_in = import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
 
             # Merge and add to temp and precip df
             snotel_t_in = snotel_t_df.merge(snotel_in["TAVG"], left_index=True, right_index=True, how="left")
@@ -140,7 +143,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
         fig.add_trace(go.Bar(
             x=snotel_p_df.index,
             y=snotel_p_df.loc[:, s],
-            marker_color=snotel_gages.loc[s, "prcp_color"],
+            marker_color=snotel_sites.loc[s, "prcp_color"],
             text="Precip (in)",
             showlegend=False,
             name=name_df.loc[s, "name"] + " Daily Precip.",
@@ -151,7 +154,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
             x=snotel_t_df.index,
             y=snotel_t_df.loc[:, s],
             mode='lines',
-            line=dict(color=snotel_gages.loc[s, "color"]),
+            line=dict(color=snotel_sites.loc[s, "color"]),
             text="Degrees (F)",
             name=name_df.loc[s, "name"] + " Avg. Temp.",
             yaxis="y1"

@@ -2,7 +2,7 @@
 """
 Created on Fri Apr  2 09:20:37 2021
 
-@author: buriona
+@author: buriona,tclarkin
 """
 
 import sys
@@ -23,6 +23,7 @@ this_dir = Path(__file__).absolute().resolve().parent
 #this_dir = Path('C:/Programs/shread_plot/database/CSAS')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
+DEFAULT_DATE_FIELD = 'date'
 DEFAULT_CSV_DIR = Path(this_dir,'csas_archive')
 DEFAULT_DB_DIR = this_dir
 
@@ -278,7 +279,9 @@ COL_TYPES = {
 }
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
-
+    """
+    Get and merge dataframes imported using shread.py
+    """
     csas1_df_list = []
     csas24_df_list = []
     print('Preparing .csv files for database creation...')
@@ -308,6 +311,9 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
 
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
               zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+    """
+    Write dataframe to database
+    """
     sensor = df.name
     print(f'Creating sqlite db for {df.name}...\n')
     print('  Getting unique site names...')
@@ -355,6 +361,9 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
     print('Success!!\n')
     
 def parse_args():
+    """
+    Arg parsing for command line use
+    """
     cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
     from SHREAD output'''
     
@@ -391,7 +400,10 @@ def parse_args():
     return parser.parse_args()
 
 if __name__ == '__main__':
-    
+    """
+    Actual batch file run script
+    """
+
     import argparse
 
     # Process archived csas data

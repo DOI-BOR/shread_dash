@@ -2,7 +2,7 @@
 """
 Created on Fri Apr  2 09:20:37 2021
 
-@author: buriona
+@author: buriona,tclarkin
 """
 
 import sys
@@ -10,32 +10,37 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import sqlalchemy as sql
+from datetime import timezone
+import datetime as dt
 import sqlite3
-from sqlite3 import OperationalError
 import zipfile
 from zipfile import ZipFile
 from requests import get as r_get
-from requests.exceptions import ReadTimeout
 from io import StringIO
 
+# Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/CSAS')
+#this_dir = Path('C:/Programs/shread_plot/database/SNOTEL')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
-DEFAULT_CSV_DIR = Path(this_dir,'csas_archive')
+DEFAULT_DATE_FIELD = 'date'
+DEFAULT_CSV_DIR = Path(this_dir,'data')
 DEFAULT_DB_DIR = this_dir
 
-def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ", "SNWD", "PREC", "TAVG"], dtype="dv", verbose=False):
+# TODO check this!
+COL_TYPES = {
+    'date': str,'site':str,'WTEQ':float,'SNWD':float,'PREC':float,'TAVG':float
+}
+
+# Define functions
+def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False,):
     """Download NRCS SNOTEL data
 
     Parameters
     ---------
         site_triplet: three part SNOTEL triplet (e.g., 713_CO_SNTL)
-        start_date: datetime
-        end_date: datetime
         vars: array of variables for import (tested with WTEQ, SNWD, PREC, TAVG..other options may be available)
-        dtype: str (only daily, dv, supported)
+        out_dir: str to directory to save .csv...if None, will return df
         verbose: boolean
             True : enable print during function run
 
@@ -44,19 +49,9 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ", "SNWD", "PRE
         dataframe
 
     """
-    # Set filepath extension for dtype
-    if dtype == "dv":
-        ext = "DAILY"
-    if dtype == "iv":
-        ext = "DAILY"
-        print("Sub-daily data not available.")
-
-    # TODO: basinaverage data
-    # TODO: soil moisture
-
-    # Create output index and dataframe
-    dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
-    data = pd.DataFrame(index=dates)
+    # Create dictionary of variables
+    snotel_dict = dict()
+    ext = "DAILY"
 
     # Cycle through variables
     for var in vars:
@@ -114,203 +109,43 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ", "SNWD", "PRE
             snotel_in["PREC"] = snotel_in[var] - snotel_in[var].shift(1)
             snotel_in.loc[snotel_in["PREC"] < 0, "PREC"] = 0
 
+        # Add to dict
+        snotel_dict[var] = snotel_in
+
+    if verbose == True:
+        print("Checking dates")
+    begin = end = pd.to_datetime(dt.datetime.now()).tz_localize("UTC")
+    for key in snotel_dict.keys():
+        if snotel_dict[key].index.min() < begin:
+            begin = snotel_dict[key].index.min()
+        if snotel_dict[key].index.max() > end:
+            end = snotel_dict[key].index.max()
+
+    dates = pd.date_range(begin,end,freq="D",tz='UTC')
+    data = pd.DataFrame(index=dates)
+    data["site"] = site_triplet
+
+    if verbose == True:
+        print("Preparing output")
+    for key in snotel_dict.keys():
         # Merge to output dataframe
-        snotel_in = data.merge(snotel_in[var], left_index=True, right_index=True, how="left")
-        data[var] = snotel_in[var]
+        snotel_in = data.merge(snotel_dict[key][key], left_index=True, right_index=True, how="left")
+        data[key] = snotel_in[key]
         if verbose == True:
             print("Added to dataframe")
 
-    # print(site_triplet)
-
-    # Return output dataframe
-    return (data)
-
-
-def process_csas_archive(data_dir=this_dir,csas_archive=DEFAULT_CSV_DIR,verbose=False):
-
-    # Check for output directory:
-    if os.path.isdir(csas_archive) is False:
-        os.mkdir(csas_archive)
-
-    print('Preparing processed csas .csv files for database creation...')
-    for data_file in data_dir.glob("*.csv"):
-        if "dust" in str(data_file):
-            continue
-        else:
-            file = str(data_file).replace(str(data_dir),"").replace("\\","")
-            site = file.split("_")[0]
-        if verbose:
-            print(f'Processing {data_file.name}...')
-        df_in = pd.read_csv(data_file)
-
-        # Create output df
-        df_out = pd.DataFrame(index=df_in.index)
-        df_out["site"] = site
-        # Check dates
-        if "24hr" in str(data_file):
-            dtype = "dv"
-            dates = compose_date(years=df_in.Year, days=df_in.DOY)
-        if "1hr" in str(data_file):
-            dtype = "iv"
-            dates = compose_date(years=df_in.Year, days=df_in.DOY, hours=df_in.Hour / 100)
-
-        df_out["type"] = dtype
-
-        # Check for albedo
-        if ("PyDwn_Unfilt_W" in str(df_in.columns)) and ("PyUp_Unfilt_W" in str(df_in.columns)):
-            df_out["albedo"] = df_in["PyDwn_Unfilt_W"] / df_in["PyUp_Unfilt_W"]
-            df_out.loc[df_out["albedo"] > 1, "albedo"] = 1
-            df_out.loc[df_out["albedo"] < 0, "albedo"] = 0
-        else:
-            df_out["albedo"] = np.nan
-
-        # Check for snow depth
-        if ("Sno_Height_M" in str(df_in.columns)):
-            df_out["snwd"] = df_in["Sno_Height_M"]*3.281*12 # Convert to inches
-        else:
-            df_out["snwd"] = np.nan
-
-        # Check for temperature
-        if dtype=="dv":
-            if ("UpAir_Avg_C" in str(df_in.columns)):
-                df_out["temp"] = df_in["UpAir_Avg_C"]*9/5+32  # Convert to F
-            elif ("Air_Max_C" in str(df_in.columns)) & ("Air_Min_C" in str(df_in.columns)):
-                df_out["temp"] =(df_in["Air_Max_C"]/2+df_in["Air_Min_C"]/2)*9/5+32  # Convert to F
-            else:
-                df_out["temp"] = np.nan
-        elif dtype=="iv":
-            if ("UpAir_Max_C" in str(df_in.columns)):
-                df_out["temp"] = df_in["UpAir_Max_C"]*9/5+32  # Convert to F
-            elif ("Air_Max_C" in str(df_in.columns)):
-                df_out["temp"] = df_in["Air_Max_C"]*9/5+32  # Convert to F
-            else:
-                df_out["temp"] = np.nan
-
-        # Check for flow
-        if ("Discharge" in str(df_in.columns)):
-            df_out["flow"] = df_in["Discharge_CFS"]
-        else:
-            df_out["flow"] = np.nan
-
-        df_out.index = dates
-
-        df_out.to_csv(Path(csas_archive,file),index_label="date")
-
-def process_csas_live(csas_archive=DEFAULT_CSV_DIR,verbose=False):
-
-    # Check for output directory:
-    if os.path.isdir(csas_archive) is False:
-        os.mkdir(csas_archive)
-
-    csas_sites = ["SBSP","SASP","PTSP","SBSG"]
-    csas_dtypes = ["iv","dv"]
-    # Set filepath extension for dtype
-
-    for dtype in csas_dtypes:
-        if verbose:
-            print(f'Processing {dtype} data...')
-
-        if dtype == "iv":
-            ext = "Hourly.php"
-        if dtype == "dv":
-            ext = "Daily.php"
-
-        for site in csas_sites:
-            if verbose:
-                print(f'for {site}...')
-
-            # Construct url
-            site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
-            print(site_url)
-
-            # Import
-            failed = True
-            tries = 0
-            while failed:
-                try:
-                    csv_str = r_get(site_url,timeout=None,verify=True).text
-                    failed = False
-                except TimeoutError:
-                    raise Exception("Timeout; Data unavailable?")
-                    tries += 1
-                    print(tries)
-                    if tries > 15:
-                        return
-
-            csv_io = StringIO(csv_str)
-            try:
-                f = pd.read_html(csv_io)
-            except ValueError:
-                return
-
-            df_in = f[1]
-            if df_in.empty:
-                if verbose:
-                    print("Data not available")
-                    return
-            if df_in is None:
-                if verbose:
-                    print("Data not available")
-                    return
-
-            if dtype == "dv":
-                dates = compose_date(years=df_in.Year,days=df_in.Day)
-            if dtype == "iv":
-                dates = compose_date(years=df_in.Year, days=df_in.Day,hours=df_in.Hour/100)
-
-            df_out = pd.DataFrame(index=df_in.index,
-                                  columns=["site","type","albedo","snwd","temp","flow"])
-            df_out["site"] = site
-            df_out["type"] = dtype
-
-            for col in df_in.columns:
-                # Check for albedo and solar radiation
-                if "Albedo" in col:
-                    df_out["albedo"] = df_in[col]
-                if "Solar Radiation-Up" in col:
-                    df_out["radup"] = df_in[col]
-                if "Solar Radiation-Down" in col:
-                    df_out["raddn"] = df_in[col]
-
-                # Check for snow depth
-                if "Snow Depth" in col:
-                    df_out["snwd"] = df_in[col]*3.281*12
-                    df_out.loc[df_out["snwd"] > 109, 'snwd'] = np.nan  # 109 is common error value
-                    df_out["snwd"] = df_out["snwd"].interpolate(limit=3)
-
-                # Check for temp
-                if ("Air Temperature" in col) & ("(C" in col):
-                    df_out["temp"] = df_in[col]*9/5+32
-
-                # Check for flow
-                if "Discharge" in col:
-                    df_out["flow"] = df_in[col]
-
-            # Fix albedo
-            if (all(pd.isna(df_out["albedo"]))==True) and ("radup" in df_out.columns) and ("raddn" in df_out.columns):
-                df_out["albedo"] = df_out["raddn"] / df_out["radup"]
-                df_out.loc[df_out["albedo"]>1,'albedo'] = 1
-                df_out.loc[df_out["albedo"]<0,"albedo"] = 0
-            if ("radup" in df_out.columns):
-                df_out = df_out.drop(labels=["radup"],axis=1)
-            if ("raddn" in df_out.columns):
-                df_out = df_out.drop(labels=["raddn"], axis=1)
-
-            # Add date index
-            df_out.index=dates
-
-            file = f"{site}_{dtype}_live.csv"
-            df_out.to_csv(Path(csas_archive,file),index_label="date")
-
-# TODO check this!
-COL_TYPES = {
-    'date': str,'site':str,'type':str,'albedo':float,'snwd':float,'temp':float,'flow':float
-}
+    if out_dir is None:
+        return (data)
+    else:
+        if os.path.isdir(out_dir) is False:
+            os.mkdir(out_dir)
+        data.to_csv(Path(out_dir,f"{site_triplet}.csv"),index_label="date")
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
-
-    csas1_df_list = []
-    csas24_df_list = []
+    """
+    Get and merge dataframes imported using functions
+    """
+    snotel_df_list = []
     print('Preparing .csv files for database creation...')
     for data_file in data_dir.glob('*.csv'):
         if verbose:
@@ -322,51 +157,75 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
             dtype=COL_TYPES
         )
         if not df.empty:
-            csas1_df_list.append(
-                df[df['type'] == 'iv'].drop(columns='type').copy()
+            snotel_df_list.append(
+                df
             )
-            csas24_df_list.append(
-                df[df['type'] == 'dv'].drop(columns='type').copy()
-            )
-            
-    df_csas_iv = pd.concat(csas1_df_list)
-    df_csas_iv.name = 'csas_iv'
-    df_csas_dv = pd.concat(csas24_df_list)
-    df_csas_dv.name = 'csas_dv'
+
+    df_snotel_dv = pd.concat(snotel_df_list)
+    df_snotel_dv.name = 'snotel_dv'
     print('  Success!!!\n')
-    return {'csas_iv':df_csas_iv,'csas_dv':df_csas_dv}
+    return {'snotel_dv':df_snotel_dv}
+
+def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
+    """
+    Get unique dates from snotel data, to ensure no duplicates
+    """
+    if not db_path.is_file():
+        return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+    db_con_str = f'sqlite:///{db_path.as_posix()}'
+    eng = sql.create_engine(db_con_str)
+    with eng.connect() as con:
+        try:
+            unique_dates = pd.read_sql(
+                f'select distinct {date_field} from {tbl_name}',
+                con
+            ).dropna()
+        except Exception:
+            return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+    return pd.to_datetime(unique_dates[date_field])
+
 
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
-              zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+             zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+    """
+    Write dataframe to database
+    """
     sensor = df.name
     print(f'Creating sqlite db for {df.name}...\n')
     print('  Getting unique site names...')
-    basin_list = pd.unique(df['site'])
+    site_list = pd.unique(df['site'])
     db_name = f"{sensor}.db"
     db_path = Path(db_path, db_name)
     zip_name = f"{sensor}_db.zip"
     zip_path = Path(db_path, zip_name)
     print(f"  Writing {db_path}...")
-    df_basin = None
+    df_site = None
     con = None
-    for site in basin_list:
+    for site in site_list:
         if verbose:
             print(f'    Getting data for {site}...')
-        df_basin = df[df['site'] == site]
-        if df_basin.empty:
+        df_site = df[df['site'] == site]
+        if df_site.empty:
             if verbose:
                 print(f'      No data for {site}...')
             continue
-        
-        site_id = site
 
+        site_id = site
+        if if_exists == 'append' and check_dups:
+            if verbose:
+                print(f'      Checking for duplicate data in {site}...')
+            unique_dates = get_unique_dates(site_id, db_path)
+            initial_len = len(df_site.index)
+            df_site = df_site[~df_site[DEFAULT_DATE_FIELD].isin(unique_dates)]
+            if verbose:
+                print(f'        Prevented {initial_len - len(df_site.index)} duplicates')
         if verbose:
-            print(f'      Writing {site} to {db_name}...')
+            print(f'      Writing snotel_{site_id} to {db_name}...')
         try:
             con = sqlite3.connect(db_path)
-            df_basin.to_sql(
-                site_id,
-                con, 
+            df_site.to_sql(
+                f"snotel_{site_id}",
+                con,
                 if_exists=if_exists,
                 chunksize=10000,
                 method='multi'
@@ -383,75 +242,90 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
         with ZipFile(zip_path.as_posix(), 'w', compression=zip_frmt) as z:
             z.write(db_path.as_posix())
     print('Success!!\n')
-    
+
+
 def parse_args():
+    """
+    Arg parsing for command line use
+    """
     cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
     from SHREAD output'''
-    
+
     parser = argparse.ArgumentParser(description=cli_desc)
     parser.add_argument(
-        "-V", "--version", help="show program version", action="store_true"
+        "-V",
+        "--version",
+        help="show program version",
+        action="store_true"
     )
     parser.add_argument(
-        "-i", "--input", 
+        "-i", "--input",
         help=f"override default csas data input dir ({DEFAULT_CSV_DIR})",
         default=DEFAULT_CSV_DIR
     )
     parser.add_argument(
-        "-o", "--output", 
+        "-o", "--output",
         help=f"override default db output dir ({DEFAULT_DB_DIR})",
         default=DEFAULT_DB_DIR
     )
     parser.add_argument(
-        "-e", "--exists", 
+        "-e", "--exists",
         help="behavior if database table exists already",
-        choices=['replace', 'fail'], default='replace'
+        choices=['replace', 'append', 'fail'],
+        default='replace'
     )
     parser.add_argument(
-        "-c", "--check_dups", 
+        "-c", "--check_dups",
         help="only write non-duplicate dates (can slow process ALOT!)",
-        action='store_true'
+        action='store_true',
+        default='false'
     )
     parser.add_argument(
-        "-z", "--zip", 
+        "-z", "--zip",
         help='zip database files after creation',
         action="store_true"
     )
-    parser.add_argument("--verbose", help="print/log verbose", action="store_true")
+    parser.add_argument(
+        "--verbose",
+        help="print/log verbose",
+        action="store_true",
+        default="true")
     return parser.parse_args()
 
+
 if __name__ == '__main__':
-    
+    """
+    Actual batch file run script
+    """
+
     import argparse
 
-    # Process archived csas data
-    process_csas_archive()
+    # Identify SNOTEL sites:
+    snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"))
 
-    # Process live csas data
-    process_csas_live()
+    for site_triplet in snotel_sites.triplet:
+        import_snotel(site_triplet)
 
     # Arguments for db build
     args = parse_args()
     print(args)
 
     if args.version:
-        print('usgs_to_db.py v1.0')
-    
+        print('snotel_to_db.py v1.0')
+
     for arg_path in [args.input, args.output]:
         if not Path(arg_path).is_dir():
             print('Invalid arg filepath ({args_path}), please try again.')
             sys.exit(1)
-        
+
     df_dict = get_dfs(Path(args.input), verbose=args.verbose)
-    df_csas_iv = df_dict['csas_iv']
-    df_csas_dv = df_dict['csas_dv']
-    
-    for df in [df_csas_iv, df_csas_dv]:
+    df_snotel_dv = df_dict['snotel_dv']
+
+    for df in [df_snotel_dv]:
         write_db(
-            df, 
-            if_exists=args.exists, 
+            df,
+            if_exists=args.exists,
             check_dups=args.check_dups,
-            zip_db=args.zip, 
+            zip_db=args.zip,
             verbose=args.verbose
         )
-    

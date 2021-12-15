@@ -2,7 +2,7 @@
 """
 Created on Fri Apr  2 09:20:37 2021
 
-@author: buriona
+@author: buriona,tclarkin
 """
 
 import sys
@@ -10,24 +10,33 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
-import sqlalchemy as sql
 import sqlite3
-from sqlite3 import OperationalError
+import sqlalchemy as sql
 import zipfile
 from zipfile import ZipFile
 from requests import get as r_get
-from requests.exceptions import ReadTimeout
 from io import StringIO
 
+# Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
 #this_dir = Path('C:/Programs/shread_plot/database/CSAS')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
-DEFAULT_CSV_DIR = Path(this_dir,'csas_archive')
+DEFAULT_DATE_FIELD = 'date'
+DEFAULT_ARCH_DIR = Path(this_dir,'csas_archive')
+DEFAULT_CSV_DIR = Path(this_dir,'data')
 DEFAULT_DB_DIR = this_dir
+COL_TYPES = {
+    'date': str,'site':str,'type':str,'albedo':float,'snwd':float,'temp':float,'flow':float
+}
 
+# Define functions
 def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
                  seconds=None, milliseconds=None, microseconds=None, nanoseconds=None):
+    """
+    for composing dates from arrays of specified quantities (years, months, etc)
+    output: datetime array
+    """
     years = np.asarray(years) - 1970
     months = np.asarray(months) - 1
     days = np.asarray(days) - 1
@@ -38,31 +47,43 @@ def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
     return sum(np.asarray(v, dtype=t) for t, v in zip(types, vals)
                if v is not None)
 
-def process_csas_archive(data_dir=this_dir,csas_archive=DEFAULT_CSV_DIR,verbose=False):
-
+def process_csas_archive(data_dir=DEFAULT_CSV_DIR,csas_archive=DEFAULT_ARCH_DIR,verbose=False):
+    """
+    process csas archive data (.csv in DEFAULT_ARCH_DIR) from https://snowstudies.org/archived-data/
+    output: none in consul, formatted .csv files to DEFAULT_CSV_DIR
+    """
     # Check for output directory:
-    if os.path.isdir(csas_archive) is False:
-        os.mkdir(csas_archive)
+    if os.path.isdir(data_dir) is False:
+        os.mkdir(data_dir)
 
     print('Preparing processed csas .csv files for database creation...')
-    for data_file in data_dir.glob("*.csv"):
-        if "dust" in str(data_file):
+    # Check for input data
+    if os.path.isdir(csas_archive) is False:
+        print("No archive data provided...")
+        return
+
+    if csas_archive.glob("*.csv") is []:
+        print("No archive data provided...")
+        return
+
+    for archive_file in csas_archive.glob("*.csv"):
+        if "dust" in str(archive_file):
             continue
         else:
-            file = str(data_file).replace(str(data_dir),"").replace("\\","")
+            file = str(archive_file).replace(str(csas_archive),"").replace("\\","")
             site = file.split("_")[0]
         if verbose:
-            print(f'Processing {data_file.name}...')
-        df_in = pd.read_csv(data_file)
+            print(f'Processing {archive_file.name}...')
+        df_in = pd.read_csv(archive_file)
 
         # Create output df
         df_out = pd.DataFrame(index=df_in.index)
         df_out["site"] = site
         # Check dates
-        if "24hr" in str(data_file):
+        if "24hr" in str(archive_file):
             dtype = "dv"
             dates = compose_date(years=df_in.Year, days=df_in.DOY)
-        if "1hr" in str(data_file):
+        if "1hr" in str(archive_file):
             dtype = "iv"
             dates = compose_date(years=df_in.Year, days=df_in.DOY, hours=df_in.Hour / 100)
 
@@ -106,13 +127,16 @@ def process_csas_archive(data_dir=this_dir,csas_archive=DEFAULT_CSV_DIR,verbose=
 
         df_out.index = dates
 
-        df_out.to_csv(Path(csas_archive,file),index_label="date")
+        df_out.to_csv(Path(data_dir,file),index_label="date")
 
-def process_csas_live(csas_archive=DEFAULT_CSV_DIR,verbose=False):
-
+def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
+    """
+    process csas live data from https://snowstudies.org/current-conditions/
+    output: none in consul, formatted .csv files to DEFAULT_CSV_DIR
+    """
     # Check for output directory:
-    if os.path.isdir(csas_archive) is False:
-        os.mkdir(csas_archive)
+    if os.path.isdir(data_dir) is False:
+        os.mkdir(data_dir)
 
     csas_sites = ["SBSP","SASP","PTSP","SBSG"]
     csas_dtypes = ["iv","dv"]
@@ -212,15 +236,12 @@ def process_csas_live(csas_archive=DEFAULT_CSV_DIR,verbose=False):
             df_out.index=dates
 
             file = f"{site}_{dtype}_live.csv"
-            df_out.to_csv(Path(csas_archive,file),index_label="date")
-
-# TODO check this!
-COL_TYPES = {
-    'date': str,'site':str,'type':str,'albedo':float,'snwd':float,'temp':float,'flow':float
-}
+            df_out.to_csv(Path(data_dir,file),index_label="date")
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
-
+    """
+    Get and merge dataframes imported using functions
+    """
     csas1_df_list = []
     csas24_df_list = []
     print('Preparing .csv files for database creation...')
@@ -248,35 +269,63 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     print('  Success!!!\n')
     return {'csas_iv':df_csas_iv,'csas_dv':df_csas_dv}
 
+def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
+    """
+    Get unique dates from shread data, to ensure no duplicates
+    """
+    if not db_path.is_file():
+        return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+    db_con_str = f'sqlite:///{db_path.as_posix()}'
+    eng = sql.create_engine(db_con_str)
+    with eng.connect() as con:
+        try:
+            unique_dates = pd.read_sql(
+                f'select distinct {date_field} from {tbl_name}',
+                con
+            ).dropna()
+        except Exception:
+            return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+    return pd.to_datetime(unique_dates[date_field])
+
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
               zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+    """
+    Write dataframe to database
+    """
     sensor = df.name
     print(f'Creating sqlite db for {df.name}...\n')
     print('  Getting unique site names...')
-    basin_list = pd.unique(df['site'])
+    site_list = pd.unique(df['site'])
     db_name = f"{sensor}.db"
     db_path = Path(db_path, db_name)
     zip_name = f"{sensor}_db.zip"
     zip_path = Path(db_path, zip_name)
     print(f"  Writing {db_path}...")
-    df_basin = None
+    df_site = None
     con = None
-    for site in basin_list:
+    for site in site_list:
         if verbose:
             print(f'    Getting data for {site}...')
-        df_basin = df[df['site'] == site]
-        if df_basin.empty:
+        df_site = df[df['site'] == site]
+        if df_site.empty:
             if verbose:
                 print(f'      No data for {site}...')
             continue
         
         site_id = site
-
+        if if_exists == 'append' and check_dups:
+            if verbose:
+                print(f'      Checking for duplicate data in {site}...')
+            unique_dates = get_unique_dates(site_id, db_path)
+            initial_len = len(df_site.index)
+            df_site = df_site[~df_site[DEFAULT_DATE_FIELD].isin(unique_dates)]
+            if verbose:
+                print(f'        Prevented {initial_len - len(df_site.index)} duplicates')
         if verbose:
             print(f'      Writing {site} to {db_name}...')
         try:
             con = sqlite3.connect(db_path)
-            df_basin.to_sql(
+            df_site.to_sql(
                 site_id,
                 con, 
                 if_exists=if_exists,
@@ -297,12 +346,18 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
     print('Success!!\n')
     
 def parse_args():
+    """
+    Arg parsing for command line use
+    """
     cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
     from SHREAD output'''
     
     parser = argparse.ArgumentParser(description=cli_desc)
     parser.add_argument(
-        "-V", "--version", help="show program version", action="store_true"
+        "-V",
+        "--version",
+        help="show program version",
+        action="store_true"
     )
     parser.add_argument(
         "-i", "--input", 
@@ -317,23 +372,32 @@ def parse_args():
     parser.add_argument(
         "-e", "--exists", 
         help="behavior if database table exists already",
-        choices=['replace', 'fail'], default='replace'
+        choices=['replace','append','fail'],
+        default='append'
     )
     parser.add_argument(
         "-c", "--check_dups", 
         help="only write non-duplicate dates (can slow process ALOT!)",
-        action='store_true'
+        action='store_true',
+        default='true'
     )
     parser.add_argument(
         "-z", "--zip", 
         help='zip database files after creation',
         action="store_true"
     )
-    parser.add_argument("--verbose", help="print/log verbose", action="store_true")
+    parser.add_argument(
+        "--verbose",
+        help="print/log verbose",
+        action="store_true",
+        default="true")
     return parser.parse_args()
 
 if __name__ == '__main__':
-    
+    """
+    Actual batch file run script
+    """
+
     import argparse
 
     # Process archived csas data
@@ -347,7 +411,7 @@ if __name__ == '__main__':
     print(args)
 
     if args.version:
-        print('usgs_to_db.py v1.0')
+        print('csas_to_db.py v1.0')
     
     for arg_path in [args.input, args.output]:
         if not Path(arg_path).is_dir():

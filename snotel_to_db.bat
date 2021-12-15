@@ -1,12 +1,12 @@
 @ECHO OFF
-TITLE "Updating CSAS DBs"
+TITLE "Refreshing SNOTEL DBs"
 set root=C:\Users\tclarkin\AppData\Local\miniforge3
 call %root%\Scripts\activate.bat
 set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
-python C:\Programs\shread_plot\database\CSAS\csas_to_db.py
+python C:\Programs\shread_plot\database\SNOTEL\snotel_to_db.py
 pause
 
 :GET_THIS_DIR

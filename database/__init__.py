@@ -36,16 +36,19 @@ def create_app():
     snodas_sd_db_path = Path(db_path, 'SNODAS', 'sd.db')
     csas_iv_db_path = Path(db_path, 'CSAS', 'csas_iv.db')
     csas_dv_db_path = Path(db_path, 'CSAS', 'csas_dv.db')
+    snotel_dv_db_path = Path(db_path, 'SNOTEL', 'snotel_dv.db')
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
     csas_iv_db_con_str = f'sqlite:///{csas_iv_db_path.as_posix()}'
     csas_dv_db_con_str = f'sqlite:///{csas_dv_db_path.as_posix()}'
+    snotel_dv_db_con_str = f'sqlite:///{snotel_dv_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.server.config['SQLALCHEMY_BINDS'] = {
         'swe': snodas_swe_db_con_str,
         'sd': snodas_sd_db_con_str,
         'csas_iv':csas_iv_db_con_str,
-        'csas_dv':csas_dv_db_con_str
+        'csas_dv':csas_dv_db_con_str,
+        'snotel_dv':snotel_dv_db_con_str,
     }
 
     return app
@@ -109,9 +112,9 @@ aspectdict = {-90: "W",
 
 # Define colors:
 # https://colorbrewer2.org/?type=qualitative&scheme=Set1&n=9
-color9 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999']
+color9 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#a65628','#f781bf','#999999']
 # Import USGS gages and define list for dashboard drop down & add colors
-usgs_gages = pd.read_csv(os.path.join(res_dir, "usgs_gages.csv"))
+usgs_gages = pd.read_csv(os.path.join(this_dir,"USGS", "usgs_gages.csv"))
 usgs_gages.index = usgs_gages.site_no
 colorg = color9
 while len(colorg)<len(usgs_gages):
@@ -125,18 +128,18 @@ for g in usgs_gages.index:
         usgs_gages.elev_ft[g]) + " ft | " + str(usgs_gages.area[g]) + " sq.mi.)", "value": "0" + str(g)})
 
 # Create list of SNOTEL sites & add colors
-snotel_gages = pd.read_csv(os.path.join(res_dir,"snotel_gages.csv"))
-snotel_gages.index = snotel_gages.triplet
+snotel_sites = pd.read_csv(os.path.join(this_dir,"SNOTEL","snotel_sites.csv"))
+snotel_sites.index = snotel_sites.triplet
 colors = color9
-while len(colors)<len(snotel_gages):
+while len(colors)<len(snotel_sites):
     colors = colors*2
-snotel_gages["color"] = snotel_gages["prcp_color"] = colors[0:len(snotel_gages)]
+snotel_sites["color"] = snotel_sites["prcp_color"] = colors[0:len(snotel_sites)]
 
 # Add list for dropdown menu
 snotel_list = list()
-for s in snotel_gages.index:
-    snotel_list.append({"label": str(snotel_gages.site_no[s]) + " " + snotel_gages.name[s] + " (" + str(
-        round(snotel_gages.elev_ft[s], 0)) + " ft)", "value": s})
+for s in snotel_sites.index:
+    snotel_list.append({"label": str(snotel_sites.site_no[s]) + " " + snotel_sites.name[s] + " (" + str(
+        round(snotel_sites.elev_ft[s], 0)) + " ft)", "value": s})
 
 # Create list of CSAS sites & add colors
 csas_gages = pd.DataFrame()

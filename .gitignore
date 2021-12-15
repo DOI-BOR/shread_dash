@@ -112,11 +112,11 @@ database/*.csv
 database/CSAS/*.csv
 database/CSAS/*.db
 database/CSAS/csas_archive/*.csv
-database/*.tif
+database/CSAS/data/*
 database/SNODAS/*.tif
 database/SNODAS/*.db
-database/SNODAS/shread_data/*.tif
-database/SNODAS/shread_data/*.csv
+database/SNODAS/data/*.tif
+database/SNODAS/data/*.csv
 database/USGS/*.db
 database/USGS/data/*.csv
 database/SNOTEL/*.db

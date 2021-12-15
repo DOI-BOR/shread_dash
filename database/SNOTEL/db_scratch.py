@@ -13,23 +13,17 @@ from flask_sqlalchemy import SQLAlchemy
 import dash
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
-this_dir = Path('C:/Programs/shread_plot/database/CSAS')
+this_dir = Path('C:/Programs/shread_plot/database/SNOTEL')
 
 def create_app(db_path):
     app = dash.Dash(
         __name__,
     )
-    #snodas_all_db_path = Path(db_path, 'snodas.db')
-    snodas_csas1_db_path = Path(db_path, 'csas_iv.db')
-    snodas_csas24_db_path = Path(db_path, 'csas_dv.db')
-    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
-    snodas_csas1_db_con_str = f'sqlite:///{snodas_csas1_db_path.as_posix()}'
-    snodas_csas24_db_con_str = f'sqlite:///{snodas_csas24_db_path.as_posix()}'
+    snotel_dv_db_path = Path(db_path, 'snotel_dv.db')
+    snotel_dv_db_con_str = f'sqlite:///{snotel_dv_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
-        'csas_iv': snodas_csas1_db_con_str,
-        'csas_dv': snodas_csas24_db_con_str
+        'snotel_dv': snotel_dv_db_con_str
     }
 
     return app
@@ -39,15 +33,10 @@ db = SQLAlchemy(app.server)
 db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")
 binds = db.get_binds()
-SENSOR = 'csas_dv' # or 'csas_iv'
+bind = 'snotel_dv'
 s_date = '2021-12-03'
 e_date = '2021-12-14'
 
-bind_dict = {
-    'csas_iv': 'csas_iv',
-    'csas_dv': 'csas_dv'
-}
-bind = bind_dict[SENSOR]
 print(bind)
 basins = db.get_tables_for_bind()
 for basin in basins:
@@ -65,4 +54,3 @@ for basin in basins:
         parse_dates=['date'],
     )
     print(df.max())
-    #sys.exit(0)

@@ -2,7 +2,7 @@
 """
 Created on Fri Apr  2 09:20:37 2021
 
-@author: buriona
+@author: buriona,tclarkin
 """
 
 import sys
@@ -10,25 +10,27 @@ from pathlib import Path
 import pandas as pd
 import sqlalchemy as sql
 import sqlite3
-from sqlite3 import OperationalError
 import zipfile
 from zipfile import ZipFile
 
-
+# Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
+#this_dir = Path('C:/Programs/shread_plot/database/SNODAS')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'Date'
-DEFAULT_CSV_DIR = Path(this_dir, 'shread_data')
+DEFAULT_CSV_DIR = Path(this_dir, 'data')
 DEFAULT_DB_DIR = this_dir
 COL_TYPES = {
     'Date': str, 'Type': str, 'OBJECTID': int, 'elev_ft': int, 'slope_d': int, 
     'aspct': int, 'nlcd': int, 'LOCAL_ID': str, 'LOCAL_NAME': str, 'mean': float
 }
 
-
+# Define functions
 def get_dfs(data_dir=DEFAULT_CSV_DIR, verbose=False):
-    
+    """
+    Get and merge dataframes imported using shread.py
+    """
     swe_df_list = []
     sd_df_list = []
     print('Preparing .csv files for database creation...')
@@ -57,6 +59,9 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR, verbose=False):
     return {'swe': df_swe, 'sd': df_sd}
 
 def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
+    """
+    Get unique dates from shread data, to ensure no duplicates
+    """
     if not db_path.is_file():
         return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
     db_con_str = f'sqlite:///{db_path.as_posix()}'
@@ -73,6 +78,9 @@ def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
 
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
               zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+    """
+    Write dataframe to database
+    """
     sensor = df.name
     print(f'Creating sqlite db for {df.name}...\n')
     print('  Getting unique basin names...')
@@ -99,11 +107,11 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
                 print(f'      Checking for duplicate data in {basin}...')
             drop_dates = get_unique_dates(basin_id, db_path)
             initial_len = len(df_basin.index)
-            df_basin = df_basin[~df_basin['Date'].isin(drop_dates)]
+            df_basin = df_basin[~df_basin[DEFAULT_DATE_FIELD].isin(drop_dates)]
             if verbose:
                 print(f'        Prevented {initial_len - len(df_basin.index)} duplicates')
         if verbose:
-            print(f'      Writting {basin} to {db_name}...')
+            print(f'      Writing {basin} to {db_name}...')
         try:
             con = sqlite3.connect(db_path)
             df_basin.to_sql(
@@ -124,9 +132,12 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
             print('  When a problem comes along you must zip it! - ({zip_name})')
         with ZipFile(zip_path.as_posix(), 'w', compression=zip_frmt) as z:
             z.write(db_path.as_posix())
-    print('Sucess!!\n')
+    print('Success!!\n')
     
 def parse_args():
+    """
+    Arg parsing for command line use
+    """
     cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
     from SHREAD output'''
     
@@ -163,7 +174,9 @@ def parse_args():
     return parser.parse_args()
 
 if __name__ == '__main__':
-    
+    """
+    Actual batch file run script
+    """
     import argparse
     
     args = parse_args()
