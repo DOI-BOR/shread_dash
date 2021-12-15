@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import hydroimport as hydro
+from hydroimport import import_snotel,import_csas_live
 
 from database import snotel_sites
 from database import csas_gages
@@ -36,7 +36,8 @@ def get_basin_stats(snodas_df,stype="swe"):
     return stats
 
 def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
-                     end_date, snotel_sel,csas_sel,plot_albedo,offline=True):
+                     end_date, snotel_sel,csas_sel,plot_albedo,
+                  offline=True):
     """
     :description: this function updates the snowplot
     :param basin: the selected basins (checklist)
@@ -50,6 +51,9 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     :param albedo: boolean
     :return: update figure
     """
+    # Set dtype:
+    dtype = "dv"
+
     # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
 
@@ -96,7 +100,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         if offline:
             snotel_in = screen_snotel(f"snotel_{s}", start_date, end_date)
         else:
-            snotel_in = hydro.import_snotel(s, start_date, end_date, vars=[slabel])
+            snotel_in = import_snotel(s, start_date, end_date, vars=[slabel])
         snotel_in = snotel_s_df.merge(snotel_in[slabel], left_index=True, right_index=True, how="left")
         snotel_s_df.loc[:, s] = snotel_in[slabel]
 
@@ -108,11 +112,13 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
 
     ## Process CSAS data (if selected)
     csas_a_df = pd.DataFrame()
-
     for site in csas_sel:
-        csas_df = screen_csas("dv", site, start_date, end_date)
+        if offline:
+            csas_df = screen_csas(site, start_date, end_date,dtype)
+        else:
+            csas_df = import_csas_live(site,start_date,end_date,dtype)
 
-        if (site != "SBSG") or (site != "PTSP"):
+        if (plot_albedo) and (site != "SBSG") and (site != "PTSP"):
             csas_a_df[site] = csas_df["albedo"]
 
     ### Plot the data
@@ -136,7 +142,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             line=dict(color=snotel_sites.loc[s, "color"]),
             name=name_df.loc[s, "name"]))
 
-    if plot_albedo == True:
+    if (plot_albedo) and (offline):
         for c in csas_a_df.columns:
             fig.add_trace(go.Scatter(
                 x=csas_a_df.index,
@@ -169,7 +175,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         hovermode='closest',
         plot_bgcolor='white',
     )
-    if plot_albedo == True:
+    if (plot_albedo) and (offline):
         fig.update_layout(
             yaxis2=dict(
                 title="100% - Albedo",

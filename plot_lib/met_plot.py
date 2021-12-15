@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_snotel
+from hydroimport import import_snotel,import_csas_live
 
 from database import snotel_sites
 from database import csas_gages
@@ -13,7 +13,8 @@ from plot_lib.utils import ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
 def get_met_plot(basin, elrange, aspects, slopes, start_date,
-                 end_date, snotel_sel, csas_sel, plot_albedo, dtype,offline=True):
+                 end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+                 offline=True):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
@@ -86,15 +87,19 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
         print("No snotel selected.")
 
     ## Process CSAS data (if selected)
+
     csas_t_df = pd.DataFrame()
     csas_a_df = pd.DataFrame()
 
     for site in csas_sel:
-        csas_df = screen_csas(dtype, site, start_date, end_date)
+        if offline:
+            csas_df = screen_csas(site, start_date, end_date,dtype)
+        else:
+            csas_df = import_csas_live(site, start_date, end_date,dtype)
 
         if site != "SBSG":
             csas_t_df[site] = csas_df["temp"]
-        if (plot_albedo) and (site != "SBSG"):
+        if (plot_albedo) and (site != "SBSG") and (site != "PTSP"):
             csas_a_df[site] = csas_df["albedo"]
 
     csas_max = np.nanmax([csas_t_df.max().max(),csas_a_df.max().max()])

@@ -208,14 +208,9 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     if dtype == "iv":
         ext = "Hourly.php"
-        print("CSAS site unresponsive for sub-daily data...changing to daily.")
-        dtype = "dv"
     if dtype == "dv":
         ext = "Daily.php"
 
-    if pd.to_datetime(start_date).year < dt.datetime.now().year:
-        print("Program not designed to handle archive CSAS data; changing start date.")
-        start_date = "2021-01-01"
     site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
     print(site_url)
 
@@ -223,7 +218,7 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
     tries = 0
     while failed:
         try:
-            csv_str = r_get(site_url, timeout=10,verify=False).text
+            csv_str = r_get(site_url, timeout=None,verify=True).text
             failed = False
         except TimeoutError:
             raise Exception("Timeout; Data unavailable?")
@@ -231,7 +226,6 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
             print(tries)
             if tries > 10:
                 return
-
 
     csv_io = StringIO(csv_str)
     try:
@@ -256,40 +250,103 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     for col in csas_in.columns:
         if "Snow Depth" in col:
-            csas_df["SNWD"] = csas_in[col]*3.28084*12
+            csas_df["snwd"] = csas_in[col]*3.28084*12
         if ("Daily Average Air Temperature" in col) & ("(C" in col):
-            csas_df["TAVG"] = csas_in[col]*9/5+32
+            csas_df["temp"] = csas_in[col]*9/5+32
         else:
             if ("Air Temperature" in col) & ("(C" in col):
-                csas_df["TAVG"] = csas_in[col]*9/5+32
+                csas_df["temp"] = csas_in[col]*9/5+32
         if "Solar Radiation-Up" in col:
-            csas_df["RadUP"] = csas_in[col]
+            csas_df["radup"] = csas_in[col]
         if "Solar Radiation-Down" in col:
-            csas_df["RadDN"] = csas_in[col]
+            csas_df["raddn"] = csas_in[col]
         if ("Discharge" in col) or ("discharge" in col):
-            csas_df["FLOW"] = csas_in[col]
+            csas_df["flow"] = csas_in[col]
 
     # Add date index
     csas_df.index=dates
 
     # Calculated Albedo (if not included)
-    if "RadUP" in csas_df.columns:
-        csas_df["ALBEDO"] = csas_df["RadDN"] / csas_df["RadUP"]
-        csas_df.loc[csas_df["ALBEDO"]>1,'ALBEDO'] = 1
-        csas_df.loc[csas_df["ALBEDO"]<0,"ALBEDO"] = 0
+    if "radup" in csas_df.columns:
+        csas_df["albedo"] = csas_df["raddn"] / csas_df["radup"]
+        csas_df.loc[csas_df["albedo"]>1,'albedo'] = 1
+        csas_df.loc[csas_df["albedo"]<0,"albedo"] = 0
 
     # Clean snow depth
-    if "SNWD" in csas_df.columns:
-        #csas_df.loc[csas_df["SNWD"]==1,"SNWD"] = np.nan
-        csas_df.loc[csas_df["SNWD"]>109,'SNWD'] = np.nan # 109 is common error value
-        csas_df["SNWD"] = csas_df["SNWD"].interpolate(limit=3)
+    if "snwd" in csas_df.columns:
+        #csas_df.loc[csas_df["snwd"]==1,"snwd"] = np.nan
+        csas_df.loc[csas_df["snwd"]>109,'snwd'] = np.nan # 109 is common error value
+        csas_df["snwd"] = csas_df["snwd"].interpolate(limit=3)
 
     if dtype == "dv":
         csas_out = csas_df.loc[(csas_df.index >= start_date) & (csas_df.index <= end_date)]
         csas_out = csas_out.tz_localize("UTC")
     if dtype == "iv":
-
         csas_out = csas_df.loc[(csas_df.index >= dt.datetime.strptime(start_date,"%Y-%m-%d")) & (csas_df.index <= dt.datetime.strptime(end_date,"%Y-%m-%d"))]
         csas_out = csas_out.tz_localize("America/Denver")
 
     return(csas_out)
+
+def nwis_import(site, dtype, start=None, end=None, wy="WY"):
+    """
+    Imports flows from NWIS site
+    :param site: str, USGS site number
+    :param dtype: str, "dv" or "iv"
+    :param start: str, start date (default is None)
+    :param end: str, end date (default is None)
+    :param wy: str, "WY
+    :return: dataframe with date index, dates, flows, month, year and water year
+    """
+    if dtype == "dv":
+        parameter = "00060_Mean"
+    elif dtype == "iv":
+        parameter = "00060"
+
+    data = pd.DataFrame()
+
+    if (start!=None) & (end!=None):
+        try:
+            data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd='00060')
+        except ValueError:
+            data["flow"] = np.nan
+    else:
+        if (start==None) & (end==None):
+            try:
+                data = nwis.get_record(sites=site, start="1800-01-01",service=dtype, parameterCd='00060')
+            except ValueError:
+                data["flow"] = np.nan
+        else:
+            if end==None:
+                try:
+                    data = nwis.get_record(sites=site, start=start, end="3000-01-01", service=dtype, parameterCd='00060')
+                except ValueError:
+                    data["flow"] = np.nan
+            if start==None:
+                try:
+                    data = nwis.get_record(sites=site, start="1800-01-01", end=end, service=dtype, parameterCd='00060')
+                except ValueError:
+                    data["flow"] = np.nan
+
+        data = data.tz_localize(None)
+        end = data.index.max()
+        start = data.index.min()
+
+    if dtype == "dv":
+        date_index = pd.date_range(start, end, freq="D")
+    elif dtype == "iv":
+        date_index = pd.date_range(start, end, freq="15T")
+
+    out = pd.DataFrame(index=date_index)
+    out = out.tz_localize(None)
+    out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
+
+    out.loc[out["flow"]==-999999,"flow"] = np.nan
+
+    # Add year, month and wy
+    out["year"] = pd.DatetimeIndex(out.index).year
+    out["month"] = pd.DatetimeIndex(out.index).month
+    out["wy"] = out["year"]
+    if wy=="WY":
+        out.loc[out["month"] >= 10, "wy"] = out.loc[out["month"] >= 10, "year"] + 1
+
+    return(out)

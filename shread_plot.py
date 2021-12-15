@@ -206,6 +206,15 @@ def get_layout():
                     dbc.Col(dbc.FormGroup(
                         [
                             html.H4('Select other options:'),
+                            dbc.Checkbox(
+                                id='offline',
+                                checked=True,
+                            ),
+                            dbc.Label(
+                                "Offline Mode",
+                                style=dict(marginLeft=10),
+                                html_for="offline",
+                            ),
                             dbc.RadioItems(
                                 id='stype',
                                 options=[{'label': "SWE", 'value': "swe"},
@@ -228,7 +237,7 @@ def get_layout():
                                 id='plot_albedo_snow',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with SNOTEL",
+                                "Plot CSAS Albedo on Snow Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_snow",
                             ),
@@ -237,7 +246,7 @@ def get_layout():
                                 id='plot_albedo_met',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with Meteo",
+                                "Plot CSAS Albedo on Meteo Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_met",
                             ),
@@ -246,7 +255,7 @@ def get_layout():
                                 id='plot_albedo_flow',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with Flow",
+                                "Plot CSAS Albedo on Flow Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_flow",
                             ),
@@ -255,7 +264,7 @@ def get_layout():
                                 id='plot_albedo_csas',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with CSAS",
+                                "Plot CSAS Albedo on CSAS Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_csas",
                             )
@@ -455,14 +464,16 @@ def load_preset_dates(a,b,c,start,end):
         Input('date_selection', 'end_date'),
         Input('snotel_sel', 'value'),
         Input('csas_sel','value'),
-        Input('plot_albedo_snow','checked')
+        Input('plot_albedo_snow','checked'),
+        Input('offline','checked')
     ])
 def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
-                     end_date, snotel_sel,csas_sel,plot_albedo):
+                     end_date, snotel_sel,csas_sel,plot_albedo,offline):
 
     fig, basin_stats = get_snow_plot(
         basin, stype, elrange, aspects, slopes, start_date,
-        end_date, snotel_sel,csas_sel,plot_albedo
+        end_date, snotel_sel,csas_sel,plot_albedo,
+        offline
     )
     return fig, basin_stats
 
@@ -478,14 +489,17 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         Input('snotel_sel', 'value'),
         Input('csas_sel','value'),
         Input('plot_albedo_met','checked'),
-        Input('dtype', 'value')
+        Input('dtype', 'value'),
+        Input('offline','checked'),
     ])
 def update_met_plot(basin, elrange, aspects, slopes, start_date,
-                    end_date, snotel_sel, csas_sel, plot_albedo, dtype):
+                    end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+                    offline):
 
     fig = get_met_plot(
         basin, elrange, aspects, slopes, start_date,
-        end_date, snotel_sel, csas_sel, plot_albedo, dtype
+        end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+        offline
     )
     return fig
 
@@ -498,13 +512,16 @@ def update_met_plot(basin, elrange, aspects, slopes, start_date,
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('csas_sel','value'),
-        Input('plot_albedo_flow','checked')
+        Input('plot_albedo_flow','checked'),
+        Input('offline','checked'),
     ])
 def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
-                     csas_sel, plot_albedo):
+                     csas_sel, plot_albedo,
+                     offline):
 
     fig = get_flow_plot(
-        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo
+        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo,
+        offline
     )
     return fig
 
@@ -517,10 +534,11 @@ def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
         Input('csas_sel', 'value'),
         Input('dtype', 'value'),
         Input('plot_albedo_csas','checked'),
+        Input('offline','checked'),
     ])
-def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo):
+def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,offline):
 
-    fig = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
+    fig = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,offline)
 
     return fig
 

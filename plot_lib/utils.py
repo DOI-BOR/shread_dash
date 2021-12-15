@@ -79,7 +79,7 @@ def ba_stats(df, dates):
     return ba_df
 
 # Function to screen csas data by site and date
-def screen_csas(dtype,site,s_date,e_date):
+def screen_csas(site,s_date,e_date,dtype):
     bind_dict = {
         'iv': 'csas_iv',
         'dv': 'csas_dv'

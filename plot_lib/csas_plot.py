@@ -5,8 +5,9 @@ import pandas as pd
 import plotly.graph_objects as go
 from plot_lib.utils import screen_csas
 from database import csas_gages, dust_ts, dust_layers
+from hydroimport import import_csas_live
 
-def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo):
+def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo,offline=True):
     """
     :description: this function updates the snowplot
     :param start_date: start date (from date selector)
@@ -16,9 +17,6 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo)
     :param dtype: data type (dv/iv)
     :return: update figure
     """
-
-    # if (start_date<"2020-12-30") & (end_date>"2020-12-30"):
-    #    return None, "Still working on CSAS...please use pre-2021 dates or 2021 dates exclusively", "light"
 
     # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
@@ -31,7 +29,10 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo)
     csas_s_df = pd.DataFrame()
 
     for site in csas_sel:
-        csas_df = screen_csas(dtype, site, start_date, end_date)
+        if offline:
+            csas_df = screen_csas(site, start_date, end_date,dtype)
+        else:
+            csas_df = import_csas_live(site,start_date,end_date,dtype)
 
         if site == "SBSG":
             csas_f_df[site] = csas_df["flow"]

@@ -5,7 +5,7 @@ import pytz
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-import hydroimport as hydro
+from hydroimport import import_rfc,import_csas_live,nwis_import
 import dataretrieval.nwis as nwis
 
 from database import csas_gages, usgs_gages
@@ -62,7 +62,7 @@ def get_log_scale_dd(ymax):
     return log_scale_dd
 
 def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel,
-                  plot_albedo):
+                  plot_albedo,offline=True):
     """
     :description: this function updates the flow plot
     :param usgs_sel: list of selected usgs sites ([])
@@ -76,7 +76,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
     """
     #print(plot_albedo)
     #print(plot_forecast)
-    # Based on data type (daily or instantaneous), flow data date index
+    #Based on data type (daily or instantaneous), flow data date index
     if dtype == "dv":
         dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
         parameter = "00060_Mean"
@@ -132,7 +132,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
             if rfc_f_df.name[g] != "nan":
                 rfc = rfc_f_df.name[g]
                 name_df.name[g] = name_df.name[g] + " (RFC: " + rfc + ")"
-                flow_in = hydro.import_rfc(rfc, dtype)
+                flow_in = import_rfc(rfc, dtype)
                 flow_in.loc[flow_in["FLOW"] < 0, "FLOW"] = np.nan
 
                 if dtype == "dv":
@@ -157,7 +157,10 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
     csas_a_df = pd.DataFrame()
 
     for site in csas_sel:
-        csas_df = screen_csas(dtype, site, start_date, end_date)
+        if offline:
+            csas_df = screen_csas(site,start_date,end_date,dtype)
+        else:
+            csas_df = import_csas_live(site,start_date,end_date,dtype)
 
         if site == "SBSG":
             csas_f_df[site] = csas_df["flow"]

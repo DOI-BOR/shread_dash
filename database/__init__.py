@@ -112,11 +112,11 @@ aspectdict = {-90: "W",
 
 # Define colors:
 # https://colorbrewer2.org/?type=qualitative&scheme=Set1&n=9
-color9 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#a65628','#f781bf','#999999']
+color8 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#a65628','#f781bf','#999999']
 # Import USGS gages and define list for dashboard drop down & add colors
 usgs_gages = pd.read_csv(os.path.join(this_dir,"USGS", "usgs_gages.csv"))
 usgs_gages.index = usgs_gages.site_no
-colorg = color9
+colorg = color8
 while len(colorg)<len(usgs_gages):
     colorg = colorg*2
 usgs_gages["color"] = colorg[0:len(usgs_gages)]
@@ -130,7 +130,7 @@ for g in usgs_gages.index:
 # Create list of SNOTEL sites & add colors
 snotel_sites = pd.read_csv(os.path.join(this_dir,"SNOTEL","snotel_sites.csv"))
 snotel_sites.index = snotel_sites.triplet
-colors = color9
+colors = color8
 while len(colors)<len(snotel_sites):
     colors = colors*2
 snotel_sites["color"] = snotel_sites["prcp_color"] = colors[0:len(snotel_sites)]
@@ -146,7 +146,7 @@ csas_gages = pd.DataFrame()
 csas_gages["site"] = ["SASP","SBSP","PTSP","SBSG"]
 csas_gages["name"] = ["Swamp Angel","Senator Beck","Putney [Meteo]","Senator Beck Gage [Flow]"]
 csas_gages["elev_ft"] = [11060,12186,12323,11030]
-colorc = color9
+colorc = color8
 while len(colorc)<len(csas_gages):
     colorc = colorc*2
 csas_gages["color"] = csas_gages["prcp_color"] = colorc[0:len(csas_gages)]
@@ -175,10 +175,10 @@ else:
 
     dust_layers = pd.DataFrame(index=dust_ts.columns)
 
-    colord = color9
+    colord = color8
     while len(colord) < len(dust_layers):
         colord = colord * 2
-    dust_layers["color"] = colorc[0:len(dust_layers)]
+    dust_layers["color"] = colord[0:len(dust_layers)]
 
 # set initial start and end date
 start_date = dt.datetime.now().date() - dt.timedelta(days=10)
