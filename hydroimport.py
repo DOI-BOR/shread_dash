@@ -10,6 +10,8 @@ from datetime import timezone
 from requests import get as r_get
 from requests.exceptions import ReadTimeout
 from io import StringIO
+import dataretrieval.nwis as nwis
+
 
 def import_rfc(site, dtype, rfc = "cbrfc", verbose=False):
     """Download NWS RFC flow data
@@ -66,13 +68,13 @@ def import_rfc(site, dtype, rfc = "cbrfc", verbose=False):
             i = i + 1
 
     rfc_dat["DATE"] = pd.to_datetime(rfc_dat["DATE"])
-    rfc_dat["FLOW"] = pd.to_numeric(rfc_dat["FLOW"])
+    rfc_dat["flow"] = pd.to_numeric(rfc_dat["FLOW"])
 
     for i in rfc_dat.index:
         rfc_dat.loc[i,"datetime"] = rfc_dat.loc[i,"DATE"]+dt.timedelta(hours=int(rfc_dat.loc[i,"TIME"].strip("Z")))
 
     rfc_dat.index = rfc_dat.datetime
-    rfc_dat = rfc_dat.drop(columns=["DATE","TIME","datetime"])
+    rfc_dat = rfc_dat.drop(columns=["DATE","TIME","datetime","FLOW"])
     rfc_dat = rfc_dat.tz_localize("UTC")
 
     return(rfc_dat)
@@ -287,49 +289,39 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     return(csas_out)
 
-def nwis_import(site, dtype, start=None, end=None, wy="WY"):
+def import_nwis(site, dtype, start=None, end=None):
     """
     Imports flows from NWIS site
     :param site: str, USGS site number
     :param dtype: str, "dv" or "iv"
     :param start: str, start date (default is None)
     :param end: str, end date (default is None)
-    :param wy: str, "WY
     :return: dataframe with date index, dates, flows, month, year and water year
     """
+    # Correct dtype
     if dtype == "dv":
         parameter = "00060_Mean"
     elif dtype == "iv":
         parameter = "00060"
 
+    # Correct dates
+    if start is None:
+        start = "2004-01-01"
+    if end is None:
+        end = dt.datetime.now().strftime("%Y-%m-%d")
+    elif pd.to_datetime(end) >= dt.datetime.now():
+        end = dt.datetime.now().strftime("%Y-%m-%d")
+
+    # Import data
     data = pd.DataFrame()
+    try:
+        data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd='00060')
+    except ValueError:
+        data["flow"] = np.nan
 
-    if (start!=None) & (end!=None):
-        try:
-            data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd='00060')
-        except ValueError:
-            data["flow"] = np.nan
-    else:
-        if (start==None) & (end==None):
-            try:
-                data = nwis.get_record(sites=site, start="1800-01-01",service=dtype, parameterCd='00060')
-            except ValueError:
-                data["flow"] = np.nan
-        else:
-            if end==None:
-                try:
-                    data = nwis.get_record(sites=site, start=start, end="3000-01-01", service=dtype, parameterCd='00060')
-                except ValueError:
-                    data["flow"] = np.nan
-            if start==None:
-                try:
-                    data = nwis.get_record(sites=site, start="1800-01-01", end=end, service=dtype, parameterCd='00060')
-                except ValueError:
-                    data["flow"] = np.nan
-
-        data = data.tz_localize(None)
-        end = data.index.max()
-        start = data.index.min()
+    # Prepare output with standard index
+    start = data.index.min()
+    end = data.index.max()
 
     if dtype == "dv":
         date_index = pd.date_range(start, end, freq="D")
@@ -337,16 +329,9 @@ def nwis_import(site, dtype, start=None, end=None, wy="WY"):
         date_index = pd.date_range(start, end, freq="15T")
 
     out = pd.DataFrame(index=date_index)
-    out = out.tz_localize(None)
     out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
 
-    out.loc[out["flow"]==-999999,"flow"] = np.nan
-
-    # Add year, month and wy
-    out["year"] = pd.DatetimeIndex(out.index).year
-    out["month"] = pd.DatetimeIndex(out.index).month
-    out["wy"] = out["year"]
-    if wy=="WY":
-        out.loc[out["month"] >= 10, "wy"] = out.loc[out["month"] >= 10, "year"] + 1
+    # Correct errors
+    out.loc[out["flow"]<0,"flow"] = np.nan
 
     return(out)

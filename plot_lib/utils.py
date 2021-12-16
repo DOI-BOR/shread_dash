@@ -42,34 +42,6 @@ def screen_snodas(db_type, s_date, e_date, basin, aspects=[0, 360],
     out_df.index.name = None
     return (out_df)
 
-# Function to screen data by basin, aspect, elevation and slopes (using points)
-def screen(input_df, basin, aspects=[0, 360], elrange=[0, 20000], slopes=[0, 100]):
-    """
-    # Function to screen gridded/point datasets
-    :param input_df: the input dataframe
-    :param basin:
-    :param aspects:
-    :param elrange:
-    :param slopes:
-    :return:
-    """
-    if aspects[0] < 0:
-        minaspect = 360 + aspects[0]
-        out_df = input_df[
-            (input_df["aspct"] >= minaspect) | (input_df["aspct"] <= aspects[1])
-        ]
-    else:
-        out_df = input_df[
-            (input_df["aspct"] >= aspects[0]) & (input_df["aspct"] <= aspects[1])
-        ]
-
-    out_df = out_df[(out_df["elev_ft"] >= elrange[0]) &
-                    (out_df["elev_ft"] <= elrange[1]) &
-                    (out_df["slope_d"] >= slopes[0]) &
-                    (out_df["slope_d"] <= slopes[1]) &
-                    (out_df["LOCAL_ID"].isin(basin))]
-    return (out_df)
-
 # Function to calculate mean, median, 5th and 95th states for screened basin
 def ba_stats(df, dates):
     ba_df = df[['Date', 'mean']].groupby(
