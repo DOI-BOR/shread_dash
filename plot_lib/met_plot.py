@@ -8,7 +8,7 @@ from hydroimport import import_snotel,import_csas_live
 from database import snotel_sites
 from database import csas_gages
 
-from plot_lib.utils import screen,ba_stats,screen_csas,screen_snotel
+from plot_lib.utils import ba_stats,screen_csas,screen_snotel
 from plot_lib.utils import ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 

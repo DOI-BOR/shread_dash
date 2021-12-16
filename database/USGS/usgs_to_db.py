@@ -17,10 +17,11 @@ import zipfile
 from zipfile import ZipFile
 from requests import get as r_get
 from io import StringIO
+import dataretrieval.nwis as nwis
 
 # Load directories and defaults
-this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/USGS')
+#this_dir = Path(__file__).absolute().resolve().parent
+this_dir = Path('C:/Programs/shread_plot/database/USGS')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
@@ -33,14 +34,70 @@ COL_TYPES = {
 }
 
 # Define functions
-def import_usgs(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False,):
-    """Download USGS NWIS data
+def import_nwis(site,dtype,start=None,end=None,data_dir=None):
+    """
+    Imports flows from NWIS site
+    :param site: str, USGS site number
+    :param dtype: str, "dv" or "iv"
+    :param start: str, start date (default is None)
+    :param end: str, end date (default is None)
+    :return: dataframe with date index, dates, flows, month, year and water year
+    """
+    # Correct dtype
+    if dtype == "dv":
+        parameter = "00060_Mean"
+    elif dtype == "iv":
+        parameter = "00060"
+
+    # Correct dates
+    if start is None:
+        start = "2004-01-01"
+    if end is None:
+        end = dt.datetime.now().strftime("%Y-%m-%d")
+    elif pd.to_datetime(end) >= dt.datetime.now():
+        end = dt.datetime.now().strftime("%Y-%m-%d")
+
+    # Import data
+    data = pd.DataFrame()
+    try:
+        data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd='00060')
+    except ValueError:
+        data["flow"] = np.nan
+
+    # Prepare output with standard index
+    start = data.index.min()
+    end = data.index.max()
+
+    if dtype == "dv":
+        date_index = pd.date_range(start, end, freq="D")
+    elif dtype == "iv":
+        date_index = pd.date_range(start, end, freq="15T")
+
+    out = pd.DataFrame(index=date_index)
+    out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
+
+    # Correct errors
+    out.loc[out["flow"]<0,"flow"] = np.nan
+
+    if data_dir is None:
+        return(out)
+    else:
+        if os.path.isdir(data_dir) is False:
+            os.mkdir(data_dir)
+
+        out["site"] = site
+        out["type"] = dtype
+        out.to_csv(Path(data_dir,f"{site}_{dtype}.csv"), index_label="date")
+
+def import_rfc(site,dtype,rfc = "cbrfc",data_dir=None,verbose=False):
+    """Download NWS RFC flow data
 
     Parameters
     ---------
-        site_triplet: three part SNOTEL triplet (e.g., 713_CO_SNTL)
-        vars: array of variables for import (tested with WTEQ, SNWD, PREC, TAVG..other options may be available)
-        out_dir: str to directory to save .csv...if None, will return df
+        site: five digit site identifier
+        start_date: datetime
+        end_date: datetime
+        time_int: text
         verbose: boolean
             True : enable print during function run
 
@@ -50,60 +107,72 @@ def import_usgs(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAU
 
     """
     if dtype == "dv":
-        dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
-        parameter = "00060_Mean"
-    elif dtype == "iv":
-        dates = pd.date_range(start_date, end_date, freq="15T", tz='UTC')
-        parameter = "00060"
+        ext = ".fflw24.csv"
+    if dtype == "iv":
+        ext = ".fflw1.csv"
 
-    # Convert usgs_end to dt for comparison to NOW()
-    usgs_end = dt.datetime.strptime(end_date, "%Y-%m-%d")
+    site_url = "https://www."+rfc+".noaa.gov/product/hydrofcst/RVFCSV/"+site+ext
 
-    # If usgs_end > NOW(), set usgs_end for import to NOW()
-    if usgs_end >= dt.datetime.now():
-        usgs_end = dt.datetime.now().date()
-        print("End Date is in future, flow observations will be imported until: " + str(usgs_end))
+    try:
+        csv_str = r_get(site_url, timeout=10).text
+    except TimeoutError:
+        raise Exception("Timeout; Data unavailable?")
+    if "not found on this server" in csv_str:
+        print("Site URL incorrect.")
+        return None
+
+    csv_io = StringIO(csv_str)
+    rfc_in = csv_io.readlines()
+    rfc_dat = pd.DataFrame()
+    data=False
+    i = 0
+    for line in range(0, len(rfc_in)):
+        text = str(rfc_in[line])
+        text = text.rstrip()
+        if text[:4] == "DATE":
+            columns = text.split(",")
+            data=True
+            if verbose == True:
+                print(columns)
+            continue
+        if data==True:
+            vals = text.split(",")
+            if verbose == True:
+                print(vals)
+            for col in range(0, len(columns)):
+                rfc_dat.loc[i, columns[col]] = vals[col]
+            i = i + 1
+
+    rfc_dat["DATE"] = pd.to_datetime(rfc_dat["DATE"])
+    rfc_dat["flow"] = pd.to_numeric(rfc_dat["FLOW"])
+
+    for i in rfc_dat.index:
+        rfc_dat.loc[i,"datetime"] = rfc_dat.loc[i,"DATE"]+dt.timedelta(hours=int(rfc_dat.loc[i,"TIME"].strip("Z")))
+
+    rfc_dat.index = rfc_dat.datetime
+    rfc_dat = rfc_dat.drop(columns=["DATE","TIME","datetime","FLOW"])
+    rfc_dat = rfc_dat.tz_localize("UTC")
+
+    if data_dir is None:
+        return (rfc_dat)
     else:
-        usgs_end = dt.datetime.strftime(usgs_end, "%Y-%m-%d")
-        plot_forecast = []  # no forecast data needed if dates aren't displayed
+        if os.path.isdir(data_dir) is False:
+            os.mkdir(data_dir)
 
-    # Create dataframes for data, names and rfc sites
-    usgs_f_df = pd.DataFrame(index=dates)
-    name_df = pd.DataFrame(index=usgs_sel)
-    rfc_f_df = pd.DataFrame(index=usgs_sel)
-
-    for g in usgs_sel:
-        name_df.loc[g, "name"] = str(g) + " " + str(usgs_gages.loc[usgs_gages["site_no"] == int(g), "name"].item())
-        if plot_forecast == True:
-            rfc_f_df.loc[g, "name"] = str(usgs_gages.loc[usgs_gages["site_no"] == int(g), "rfc"].item())
-
-        try:
-            flow_in = nwis.get_record(sites=g, service=dtype, start=start_date, end=usgs_end, parameterCd="00060")
-        except ValueError:
-            print("Gage not found; check gage ID.")
-            flow_in = pd.DataFrame(index=dates)
-            flow_in[parameter] = np.nan
-
-        if len(flow_in) == 0:
-            print(f"USGS data not found for {g}.")
-            flow_in = pd.DataFrame(index=dates)
-            flow_in[parameter] = np.nan
-
-        flow_in.loc[flow_in[parameter] < 0, parameter] = np.nan
-        flow_in = usgs_f_df.merge(flow_in[parameter], left_index=True, right_index=True, how="left")
-        usgs_f_df[g] = flow_in[parameter]
-
-
-
-
-
-
+        fcst_dt = rfc_dat.index.min().date().strftime("%Y-%m-%d")
+        rfc_dat["site"] = site
+        rfc_dat["type"] = dtype
+        rfc_dat["fcst_dt"] = fcst_dt
+        rfc_dat.to_csv(Path(data_dir,f"{site}_{dtype}_{fcst_dt}.csv"), index_label="date")
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     """
     Get and merge dataframes imported using functions
     """
-    usgs_df_list = []
+    usgs_df_dv_list = []
+    usgs_df_iv_list = []
+    rfc_df_dv_list = []
+    rfc_df_iv_list = []
     print('Preparing .csv files for database creation...')
     for data_file in data_dir.glob('*.csv'):
         if verbose:
@@ -115,16 +184,32 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
             dtype=COL_TYPES
         )
         if not df.empty:
-            usgs_df_list.append(
-                df
+            usgs_df_iv_list.append(
+                df[df['type'] == 'iv'].drop(columns='type').copy()
+            )
+            usgs_df_dv_list.append(
+                df[df['type'] == 'dv'].drop(columns='type').copy()
+            )
+            rfc_df_iv_list.append(
+                df[df['type'] == 'iv'].drop(columns='type').copy()
+            )
+            rfc_df_dv_list.append(
+                df[df['type'] == 'dv'].drop(columns='type').copy()
             )
 
-    df_usgs_dv = pd.concat(usgs_df_list)
+    df_usgs_dv = pd.concat(usgs_df_dv_list)
     df_usgs_dv.name = 'usgs_dv'
-    df_usgs_iv = pd.concat(usgs_df_list)
+    df_usgs_iv = pd.concat(usgs_df_iv_list)
     df_usgs_iv.name = 'usgs_iv'
+    df_rfc_dv = pd.concat(rfc_df_dv_list)
+    df_rfc_dv.name = 'rfc_dv'
+    df_rfc_iv = pd.concatrfc_df_iv_list)
+    df_rfc_iv.name = 'rfc_iv'
     print('  Success!!!\n')
-    return {'usgs_dv':df_usgs_dv,'usgs_iv':df_usgs_iv}
+    return {'usgs_dv':df_usgs_dv,
+            'usgs_iv':df_usgs_iv,
+            'rfc_dv':df_rfc_dv,
+            'rfc_iv':df_rfc_iv}
 
 def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
     """
@@ -232,13 +317,13 @@ def parse_args():
         "-e", "--exists",
         help="behavior if database table exists already",
         choices=['replace', 'append', 'fail'],
-        default='replace'
+        default='append'
     )
     parser.add_argument(
         "-c", "--check_dups",
         help="only write non-duplicate dates (can slow process ALOT!)",
         action='store_true',
-        default='false'
+        default='true'
     )
     parser.add_argument(
         "-z", "--zip",
@@ -261,10 +346,33 @@ if __name__ == '__main__':
     import argparse
 
     # Identify SNOTEL sites:
-    usgs_sites = pd.read_csv(os.path.join(this_dir, "usgs_gages.csv"))
+    usgs_sites = pd.read_csv(os.path.join(this_dir, "usgs_gages.csv"),index_col=0)
 
-    for site_no in usgs_sites.site_no:
-        import_usgs(site_no)
+    for dtype in ["dv"]: #"iv"
+        for site_no in usgs_sites.index:
+            site = str(site_no)
+            if len(site)<8:
+                site = f"0{site}"
+
+            if "end" in str(usgs_sites.columns):
+                if usgs_sites.loc[site_no,"end"]==None:
+                    start = None
+                    usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
+                else:
+                    start = usgs_sites.loc[site_no,"end"]
+            else:
+                start = None
+                usgs_sites["end"] = None
+                usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
+
+            end = dt.datetime.now().strftime("%Y-%m-%d")
+
+            if (start!=end) and (site!="09362750"):
+                import_nwis(site,dtype,start,end,DEFAULT_CSV_DIR)
+
+            if str(usgs_sites.loc[site_no,"rfc"])!="nan":
+                import_rfc(usgs_sites.loc[site_no,"rfc"],dtype,"cbrfc",DEFAULT_CSV_DIR)
+    usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
 
     # Arguments for db build
     args = parse_args()
@@ -281,8 +389,10 @@ if __name__ == '__main__':
     df_dict = get_dfs(Path(args.input), verbose=args.verbose)
     df_usgs_dv = df_dict['usgs_dv']
     df_usgs_iv = df_dict['usgs_iv']
+    df_rfc_dv = df_dict['rfc_dv']
+    df_rfc_iv = df_dict['rfc_iv']
 
-    for df in [df_usgs_dv,df_usgs_iv]:
+    for df in [df_usgs_dv,df_usgs_iv,df_rfc_dv,df_rfc_iv]:
         write_db(
             df,
             if_exists=args.exists,

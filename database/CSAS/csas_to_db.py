@@ -242,8 +242,8 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     """
     Get and merge dataframes imported using functions
     """
-    csas1_df_list = []
-    csas24_df_list = []
+    csas_iv_df_list = []
+    csas_dv_df_list = []
     print('Preparing .csv files for database creation...')
     for data_file in data_dir.glob('*.csv'):
         if verbose:
@@ -255,16 +255,16 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
             dtype=COL_TYPES
         )
         if not df.empty:
-            csas1_df_list.append(
+            csas_iv_df_list.append(
                 df[df['type'] == 'iv'].drop(columns='type').copy()
             )
-            csas24_df_list.append(
+            csas_dv_df_list.append(
                 df[df['type'] == 'dv'].drop(columns='type').copy()
             )
             
-    df_csas_iv = pd.concat(csas1_df_list)
+    df_csas_iv = pd.concat(csas_iv_df_list)
     df_csas_iv.name = 'csas_iv'
-    df_csas_dv = pd.concat(csas24_df_list)
+    df_csas_dv = pd.concat(csas_dv_df_list)
     df_csas_dv.name = 'csas_dv'
     print('  Success!!!\n')
     return {'csas_iv':df_csas_iv,'csas_dv':df_csas_dv}

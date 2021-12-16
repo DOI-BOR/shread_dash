@@ -5,8 +5,8 @@ import pytz
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_rfc,import_csas_live,import_nwis
-import dataretrieval.nwis as nwis
+from hydroimport import import_csas_live
+from database.USGS.usgs_to_db import import_rfc,import_nwis
 
 from database import csas_gages, usgs_gages
 
@@ -106,7 +106,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
     if plot_forecast == True:
         print("Attempting to include forecast data")
         if dtype == "dv":
-            forecast_begin = pytz.timezone("UTC").localize(dt.datetime.today())
+            forecast_begin = pytz.timezone("America/Denver").localize(dt.datetime.today())
         if dtype == "iv":
             forecast_begin = pytz.timezone("America/Denver").localize(dt.datetime.now())
 
@@ -122,8 +122,9 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
                     rfc_in = rfc_in.tz_convert("America/Denver")
 
                 rfc_in = usgs_f_df.merge(rfc_in["flow"], left_index=True, right_index=True, how="left")
-                rfc_in = rfc_in.fillna(method="ffill")
+
                 usgs_f_df.loc[usgs_f_df.index >= forecast_begin, g] = rfc_in.loc[rfc_in.index >= forecast_begin, "flow"]
+                usgs_f_df[g] = usgs_f_df[g].interpolate()
 
     if len(usgs_f_df.columns) == 0:
         print("No USGS selected.")
