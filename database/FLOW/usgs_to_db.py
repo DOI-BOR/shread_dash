@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from datetime import timezone
 import datetime as dt
 import sqlite3
 import sqlalchemy as sql
@@ -18,158 +17,112 @@ import zipfile
 from zipfile import ZipFile
 from requests import get as r_get
 from io import StringIO
+import dataretrieval.nwis as nwis
 
 # Load directories and defaults
-this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/SNOTEL')
+#this_dir = Path(__file__).absolute().resolve().parent
+this_dir = Path('C:/Programs/shread_plot/database/FLOW')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
-DEFAULT_CSV_DIR = Path(this_dir,'data')
+DEFAULT_CSV_DIR = Path(this_dir,'usgs_data')
 DEFAULT_DB_DIR = this_dir
 
 # TODO check this!
 COL_TYPES = {
-    'date': str,'site':str,'WTEQ':float,'SNWD':float,'PREC':float,'TAVG':float
+    'date': str,'flow':float,'site':str,'type':str
 }
 
 # Define functions
-def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False,):
-    """Download NRCS SNOTEL data
-
-    Parameters
-    ---------
-        site_triplet: three part SNOTEL triplet (e.g., 713_CO_SNTL)
-        vars: array of variables for import (tested with WTEQ, SNWD, PREC, TAVG..other options may be available)
-        out_dir: str to directory to save .csv...if None, will return df
-        verbose: boolean
-            True : enable print during function run
-
-    Returns
-    -------
-        dataframe
-
+def import_nwis(site,dtype,start=None,end=None,data_dir=None):
     """
-    # Create dictionary of variables
-    snotel_dict = dict()
-    ext = "DAILY"
+    Imports flows from NWIS site
+    :param site: str, FLOW site number
+    :param dtype: str, "dv" or "iv"
+    :param start: str, start date (default is None)
+    :param end: str, end date (default is None)
+    :return: dataframe with date index, dates, flows, month, year and water year
+    """
+    # Correct dtype and dates
+    if dtype == "dv":
+        parameter = "00060_Mean"
+        if start is None:
+            start = "2004-01-01"
+    elif dtype == "iv":
+        parameter = "00060"
+        if start is None:
+            start = "2019-01-01"
 
-    # Cycle through variables
-    for var in vars:
-        if verbose == True:
-            print("Importing {} data".format(var))
-        site_url = "https://www.nrcs.usda.gov/Internet/WCIS/sitedata/" + ext + "/" + var + "/" + site_triplet + ".json"
-        failed = True
-        tries = 0
-        while failed:
-            try:
-                csv_str = r_get(site_url, timeout=5).text
-                failed = False
-            except TimeoutError:
-                raise Exception("Timeout; Data unavailable?")
-                tries += 1
-                if tries > 4:
-                    return
-            if "not found on this server" in csv_str:
-                print("Site URL incorrect.")
-                return
+    if (end is None) or (pd.to_datetime(end) >= dt.datetime.now()):
+        end = dt.datetime.now().strftime("%Y-%m-%d")
 
-        csv_io = StringIO(csv_str)
-        f = pd.read_json(csv_io, orient="index")
+    # Import data
+    data = pd.DataFrame()
+    try:
+        data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd="00060")
+    except ValueError:
+        data["flow"] = np.nan
 
-        # Create index of dates for available data for current site
-        json_index = pd.date_range(f.loc["beginDate"].item(), f.loc["endDate"].item(), freq="D", tz='UTC')
-        # Create dataframe of available data (includes Feb 29)
-        json_data = pd.DataFrame(f.loc["values"].item())
-        # Cycle through and remove data assigned to February 29th in non-leap years
-        years = json_index.year.unique()
-        for year in years:
-            if (year % 4 == 0) & ((year % 100 != 0) | (year % 400 == 0)):
-                continue
-            else:
-                feb29 = dt.datetime(year=year, month=3, day=1, tzinfo=timezone.utc)
-                try:
-                    feb29idx = json_index.get_loc(feb29)
-                    if feb29idx == 0:
-                        continue
-                    else:
-                        json_data = json_data.drop(feb29idx)
-                        if verbose == True:
-                            print("February 29th data for {} removed.".format(year))
-                except KeyError:
-                    continue
+    # Prepare output with standard index
+    start_date = data.index.min()
+    end_date = data.index.max()
 
-        # Concatenate the cleaned data to the date index
-        snotel_in = pd.DataFrame(index=json_index)
-        snotel_in[var] = json_data.values
+    if dtype == "dv":
+        date_index = pd.date_range(start_date, end_date, freq="D")
+    elif dtype == "iv":
+        date_index = pd.date_range(start_date, end_date, freq="15T")
 
-        # For precip, calculate incremental precip and remove negative values
-        if var == "PREC":
-            if verbose == True:
-                print("Calculating incremental Precip.")
-            snotel_in["PREC"] = snotel_in[var] - snotel_in[var].shift(1)
-            snotel_in.loc[snotel_in["PREC"] < 0, "PREC"] = 0
+    out = pd.DataFrame(index=date_index)
+    out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
 
-        # Add to dict
-        snotel_dict[var] = snotel_in
+    # Correct errors
+    out.loc[out["flow"]<0,"flow"] = np.nan
 
-    if verbose == True:
-        print("Checking dates")
-    begin = end = pd.to_datetime(dt.datetime.now()).tz_localize("UTC")
-    for key in snotel_dict.keys():
-        if snotel_dict[key].index.min() < begin:
-            begin = snotel_dict[key].index.min()
-        if snotel_dict[key].index.max() > end:
-            end = snotel_dict[key].index.max()
-
-    dates = pd.date_range(begin,end,freq="D",tz='UTC')
-    data = pd.DataFrame(index=dates)
-    data["site"] = site_triplet
-
-    if verbose == True:
-        print("Preparing output")
-    for key in snotel_dict.keys():
-        # Merge to output dataframe
-        snotel_in = data.merge(snotel_dict[key][key], left_index=True, right_index=True, how="left")
-        data[key] = snotel_in[key]
-        if verbose == True:
-            print("Added to dataframe")
-
-    if out_dir is None:
-        return (data)
+    if data_dir is None:
+        return(out)
     else:
-        if os.path.isdir(out_dir) is False:
-            os.mkdir(out_dir)
-        data.to_csv(Path(out_dir,f"{site_triplet}.csv"),index_label="date")
+        if os.path.isdir(data_dir) is False:
+            os.mkdir(data_dir)
+
+        out["site"] = site
+        out["type"] = f"usgs_{dtype}"
+        out.to_csv(Path(data_dir,f"{site}_{dtype}.csv"), index_label="date")
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     """
     Get and merge dataframes imported using functions
     """
-    snotel_df_list = []
+    usgs_df_dv_list = []
+    usgs_df_iv_list = []
     print('Preparing .csv files for database creation...')
     for data_file in data_dir.glob('*.csv'):
         if verbose:
             print(f'Adding {data_file.name} to dataframe...')
         df = pd.read_csv(
-            data_file, 
+            data_file,
             usecols=COL_TYPES.keys(),
             parse_dates=['date'],
             dtype=COL_TYPES
         )
         if not df.empty:
-            snotel_df_list.append(
-                df
+            usgs_df_iv_list.append(
+                df[df['type'] == 'usgs_iv'].drop(columns='type').copy()
+            )
+            usgs_df_dv_list.append(
+                df[df['type'] == 'usgs_dv'].drop(columns='type').copy()
             )
 
-    df_snotel_dv = pd.concat(snotel_df_list)
-    df_snotel_dv.name = 'snotel_dv'
+    df_usgs_dv = pd.concat(usgs_df_dv_list)
+    df_usgs_dv.name = 'usgs_dv'
+    df_usgs_iv = pd.concat(usgs_df_iv_list)
+    df_usgs_iv.name = 'usgs_iv'
     print('  Success!!!\n')
-    return {'snotel_dv':df_snotel_dv}
+    return {'usgs_dv':df_usgs_dv,
+            'usgs_iv':df_usgs_iv}
 
 def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
     """
-    Get unique dates from snotel data, to ensure no duplicates
+    Get unique dates from usgs data, to ensure no duplicates
     """
     if not db_path.is_file():
         return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
@@ -187,7 +140,7 @@ def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
 
 
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
-             zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+             zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=True):
     """
     Write dataframe to database
     """
@@ -221,11 +174,11 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
             if verbose:
                 print(f'        Prevented {initial_len - len(df_site.index)} duplicates')
         if verbose:
-            print(f'      Writing snotel_{site_id} to {db_name}...')
+            print(f'      Writing site_{site_id} to {db_name}...')
         try:
             con = sqlite3.connect(db_path)
             df_site.to_sql(
-                f"snotel_{site_id}",
+                f"site_{site}",
                 con,
                 if_exists=if_exists,
                 chunksize=10000,
@@ -273,13 +226,13 @@ def parse_args():
         "-e", "--exists",
         help="behavior if database table exists already",
         choices=['replace', 'append', 'fail'],
-        default='replace'
+        default='append'
     )
     parser.add_argument(
         "-c", "--check_dups",
         help="only write non-duplicate dates (can slow process ALOT!)",
         action='store_true',
-        default='false'
+        default='true'
     )
     parser.add_argument(
         "-z", "--zip",
@@ -302,17 +255,39 @@ if __name__ == '__main__':
     import argparse
 
     # Identify SNOTEL sites:
-    snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"))
+    usgs_sites = pd.read_csv(os.path.join(this_dir, "usgs_gages.csv"),index_col=0)
 
-    for site_triplet in snotel_sites.triplet:
-        import_snotel(site_triplet)
+    for site_no in usgs_sites.index:
+        site = str(site_no)
+        if len(site)<8:
+            site = f"0{site}"
+        print(f"Downloading data for {site}")
+
+        if "end" in str(usgs_sites.columns):
+            if usgs_sites.loc[site_no,"end"]==None:
+                start = None
+                usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
+            else:
+                start = usgs_sites.loc[site_no,"end"]
+        else:
+            start = None
+            usgs_sites["end"] = None
+            usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
+
+        end = dt.datetime.now().strftime("%Y-%m-%d")
+
+        for dtype in ["dv", "iv"]:
+            if (start!=end) and (site!="09362750"):
+                import_nwis(site,dtype,start,end,DEFAULT_CSV_DIR)
+
+    usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
 
     # Arguments for db build
     args = parse_args()
     print(args)
 
     if args.version:
-        print('snotel_to_db.py v1.0')
+        print('usgs_to_db.py v1.0')
 
     for arg_path in [args.input, args.output]:
         if not Path(arg_path).is_dir():
@@ -320,9 +295,10 @@ if __name__ == '__main__':
             sys.exit(1)
 
     df_dict = get_dfs(Path(args.input), verbose=args.verbose)
-    df_snotel_dv = df_dict['snotel_dv']
+    df_usgs_dv = df_dict['usgs_dv']
+    df_usgs_iv = df_dict['usgs_iv']
 
-    for df in [df_snotel_dv]:
+    for df in [df_usgs_dv,df_usgs_iv]:
         write_db(
             df,
             if_exists=args.exists,

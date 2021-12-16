@@ -15,7 +15,7 @@ from zipfile import ZipFile
 
 # Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/SNODAS')
+#this_dir = Path('C:/Programs/shread_plot/database/SHREAD')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'Date'
@@ -138,7 +138,7 @@ def parse_args():
     """
     Arg parsing for command line use
     """
-    cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
+    cli_desc = '''Creates sqlite db files for SHREAD swe and sd datatypes 
     from SHREAD output'''
     
     parser = argparse.ArgumentParser(description=cli_desc)

@@ -349,7 +349,7 @@ def parse_args():
     """
     Arg parsing for command line use
     """
-    cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
+    cli_desc = '''Creates sqlite db files for SHREAD swe and sd datatypes 
     from SHREAD output'''
     
     parser = argparse.ArgumentParser(description=cli_desc)

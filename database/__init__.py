@@ -32,16 +32,25 @@ def create_app():
     )
     app.title="WCAO Dashboard"
     db_path = Path(app_dir, 'database')
-    snodas_swe_db_path = Path(db_path, 'SNODAS', 'swe.db')
-    snodas_sd_db_path = Path(db_path, 'SNODAS', 'sd.db')
+    snodas_swe_db_path = Path(db_path, 'SHREAD', 'swe.db')
+    snodas_sd_db_path = Path(db_path, 'SHREAD', 'sd.db')
     csas_iv_db_path = Path(db_path, 'CSAS', 'csas_iv.db')
     csas_dv_db_path = Path(db_path, 'CSAS', 'csas_dv.db')
     snotel_dv_db_path = Path(db_path, 'SNOTEL', 'snotel_dv.db')
+    usgs_dv_db_path = Path(db_path, 'FLOW', 'usgs_dv.db')
+    usgs_iv_db_path = Path(db_path, 'FLOW', 'usgs_iv.db')
+    rfc_dv_db_path = Path(db_path, 'FLOW', 'rfc_dv.db')
+    rfc_iv_db_path = Path(db_path, 'FLOW', 'rfc_iv.db')
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
     csas_iv_db_con_str = f'sqlite:///{csas_iv_db_path.as_posix()}'
     csas_dv_db_con_str = f'sqlite:///{csas_dv_db_path.as_posix()}'
     snotel_dv_db_con_str = f'sqlite:///{snotel_dv_db_path.as_posix()}'
+    usgs_dv_db_con_str = f'sqlite:///{usgs_dv_db_path.as_posix()}'
+    usgs_iv_db_con_str = f'sqlite:///{usgs_iv_db_path.as_posix()}'
+    rfc_dv_db_con_str = f'sqlite:///{rfc_dv_db_path.as_posix()}'
+    rfc_iv_db_con_str = f'sqlite:///{rfc_iv_db_path.as_posix()}'
+
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.server.config['SQLALCHEMY_BINDS'] = {
         'swe': snodas_swe_db_con_str,
@@ -49,6 +58,10 @@ def create_app():
         'csas_iv':csas_iv_db_con_str,
         'csas_dv':csas_dv_db_con_str,
         'snotel_dv':snotel_dv_db_con_str,
+        'usgs_dv':usgs_dv_db_con_str,
+        'usgs_iv':usgs_iv_db_con_str,
+        'rfc_dv':rfc_dv_db_con_str,
+        'rfc_iv':rfc_iv_db_con_str
     }
 
     return app
@@ -69,7 +82,7 @@ res_dir = os.path.join(app_dir, 'resources')
 #switch working dir back to main dir so dash app can function correctly
 os.chdir(app_dir)	  
 
-print('Calculating bounds of SNODAS.db')
+print('Calculating bounds of SHREAD.db')
 # Create list of basins
 # df_local_ids = pd.read_sql(
 # 'select distinct LOCAL_ID as LOCAL_ID, LOCAL_NAME from sd', db.engine).dropna()
@@ -113,8 +126,8 @@ aspectdict = {-90: "W",
 # Define colors:
 # https://colorbrewer2.org/?type=qualitative&scheme=Set1&n=9
 color8 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#a65628','#f781bf','#999999']
-# Import USGS gages and define list for dashboard drop down & add colors
-usgs_gages = pd.read_csv(os.path.join(this_dir,"USGS", "usgs_gages.csv"))
+# Import FLOW gages and define list for dashboard drop down & add colors
+usgs_gages = pd.read_csv(os.path.join(this_dir,"FLOW", "usgs_gages.csv"))
 usgs_gages.index = usgs_gages.site_no
 colorg = color8
 while len(colorg)<len(usgs_gages):

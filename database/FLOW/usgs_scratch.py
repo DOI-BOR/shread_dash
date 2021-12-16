@@ -13,20 +13,20 @@ from flask_sqlalchemy import SQLAlchemy
 import dash
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
-this_dir = Path('C:/Programs/shread_plot/database/CSAS')
+this_dir = Path('C:/Programs/shread_plot/database/FLOW')
 
 def create_app(db_path):
     app = dash.Dash(
         __name__,
     )
-    snodas_csas1_db_path = Path(db_path, 'csas_iv.db')
-    snodas_csas24_db_path = Path(db_path, 'csas_dv.db')
-    snodas_csas1_db_con_str = f'sqlite:///{snodas_csas1_db_path.as_posix()}'
-    snodas_csas24_db_con_str = f'sqlite:///{snodas_csas24_db_path.as_posix()}'
+    usgs_iv_db_path = Path(db_path, 'usgs_iv.db')
+    usgs_dv_db_path = Path(db_path, 'usgs_dv.db')
+    usgs_iv_db_con_str = f'sqlite:///{usgs_iv_db_path.as_posix()}'
+    usgs_dv_db_con_str = f'sqlite:///{usgs_dv_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.server.config['SQLALCHEMY_BINDS'] = {
-        'csas_iv': snodas_csas1_db_con_str,
-        'csas_dv': snodas_csas24_db_con_str
+        'usgs_iv': usgs_iv_db_con_str,
+        'usgs_dv': usgs_dv_db_con_str,
     }
 
     return app
@@ -36,21 +36,21 @@ db = SQLAlchemy(app.server)
 db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")
 binds = db.get_binds()
-SENSOR = 'csas_dv' # or 'csas_iv'
+SENSOR = 'usgs_iv' # or 'usgs_iv'
 s_date = '2021-12-03'
-e_date = '2021-12-14'
+e_date = '2021-12-17'
 
 bind_dict = {
-    'csas_iv': 'csas_iv',
-    'csas_dv': 'csas_dv'
+    'usgs_iv':'usgs_iv',
+    'usgs_dv':'usgs_dv',
 }
 bind = bind_dict[SENSOR]
 print(bind)
-basins = db.get_tables_for_bind()
-for basin in basins:
+sites = db.get_tables_for_bind()
+for site in sites:
     engine = db.get_engine(bind=bind)
     qry = (
-        f"select * from {basin} where "
+        f"select * from {site} where "
         f"`date` >= '{s_date}' "
         f"and `date` <= '{e_date}' "
     )
@@ -59,7 +59,7 @@ for basin in basins:
     df = pd.read_sql(
         qry,
         db.get_engine(bind=bind),
-        parse_dates=['date'],
+        parse_dates=['date','fcst_dt'],
     )
     print(df.max())
     #sys.exit(0)

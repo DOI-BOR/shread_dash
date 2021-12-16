@@ -288,7 +288,7 @@ def get_layout():
                             dcc.Dropdown(
                                 id='usgs_sel',
                                 options=usgs_list,
-                                placeholder="Select USGS gages",
+                                placeholder="Select FLOW gages",
                                 value=[],
                                 multi=True),
                             html.Div(html.B()),

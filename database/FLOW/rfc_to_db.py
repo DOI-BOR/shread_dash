@@ -10,9 +10,9 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from datetime import timezone
 import datetime as dt
 import sqlite3
+import sqlalchemy as sql
 import zipfile
 from zipfile import ZipFile
 from requests import get as r_get
@@ -21,73 +21,17 @@ import dataretrieval.nwis as nwis
 
 # Load directories and defaults
 #this_dir = Path(__file__).absolute().resolve().parent
-this_dir = Path('C:/Programs/shread_plot/database/USGS')
+this_dir = Path('C:/Programs/shread_plot/database/FLOW')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
-DEFAULT_CSV_DIR = Path(this_dir,'data')
+DEFAULT_CSV_DIR = Path(this_dir,'rfc_data')
 DEFAULT_DB_DIR = this_dir
 
 # TODO check this!
 COL_TYPES = {
-    'date': str,'site':str,'WTEQ':float,'SNWD':float,'PREC':float,'TAVG':float
+    'date': str,'flow':float,'site':str,'type':str,'fcst_dt':str
 }
-
-# Define functions
-def import_nwis(site,dtype,start=None,end=None,data_dir=None):
-    """
-    Imports flows from NWIS site
-    :param site: str, USGS site number
-    :param dtype: str, "dv" or "iv"
-    :param start: str, start date (default is None)
-    :param end: str, end date (default is None)
-    :return: dataframe with date index, dates, flows, month, year and water year
-    """
-    # Correct dtype
-    if dtype == "dv":
-        parameter = "00060_Mean"
-    elif dtype == "iv":
-        parameter = "00060"
-
-    # Correct dates
-    if start is None:
-        start = "2004-01-01"
-    if end is None:
-        end = dt.datetime.now().strftime("%Y-%m-%d")
-    elif pd.to_datetime(end) >= dt.datetime.now():
-        end = dt.datetime.now().strftime("%Y-%m-%d")
-
-    # Import data
-    data = pd.DataFrame()
-    try:
-        data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd='00060')
-    except ValueError:
-        data["flow"] = np.nan
-
-    # Prepare output with standard index
-    start = data.index.min()
-    end = data.index.max()
-
-    if dtype == "dv":
-        date_index = pd.date_range(start, end, freq="D")
-    elif dtype == "iv":
-        date_index = pd.date_range(start, end, freq="15T")
-
-    out = pd.DataFrame(index=date_index)
-    out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
-
-    # Correct errors
-    out.loc[out["flow"]<0,"flow"] = np.nan
-
-    if data_dir is None:
-        return(out)
-    else:
-        if os.path.isdir(data_dir) is False:
-            os.mkdir(data_dir)
-
-        out["site"] = site
-        out["type"] = dtype
-        out.to_csv(Path(data_dir,f"{site}_{dtype}.csv"), index_label="date")
 
 def import_rfc(site,dtype,rfc = "cbrfc",data_dir=None,verbose=False):
     """Download NWS RFC flow data
@@ -161,16 +105,16 @@ def import_rfc(site,dtype,rfc = "cbrfc",data_dir=None,verbose=False):
 
         fcst_dt = rfc_dat.index.min().date().strftime("%Y-%m-%d")
         rfc_dat["site"] = site
-        rfc_dat["type"] = dtype
+        rfc_dat["type"] = f"rfc_{dtype}"
         rfc_dat["fcst_dt"] = fcst_dt
         rfc_dat.to_csv(Path(data_dir,f"{site}_{dtype}_{fcst_dt}.csv"), index_label="date")
+
+        return fcst_dt
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     """
     Get and merge dataframes imported using functions
     """
-    usgs_df_dv_list = []
-    usgs_df_iv_list = []
     rfc_df_dv_list = []
     rfc_df_iv_list = []
     print('Preparing .csv files for database creation...')
@@ -184,36 +128,24 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
             dtype=COL_TYPES
         )
         if not df.empty:
-            usgs_df_iv_list.append(
-                df[df['type'] == 'iv'].drop(columns='type').copy()
-            )
-            usgs_df_dv_list.append(
-                df[df['type'] == 'dv'].drop(columns='type').copy()
-            )
             rfc_df_iv_list.append(
-                df[df['type'] == 'iv'].drop(columns='type').copy()
+                df[df['type'] == 'rfc_iv'].drop(columns='type').copy()
             )
             rfc_df_dv_list.append(
-                df[df['type'] == 'dv'].drop(columns='type').copy()
+                df[df['type'] == 'rfc_dv'].drop(columns='type').copy()
             )
 
-    df_usgs_dv = pd.concat(usgs_df_dv_list)
-    df_usgs_dv.name = 'usgs_dv'
-    df_usgs_iv = pd.concat(usgs_df_iv_list)
-    df_usgs_iv.name = 'usgs_iv'
     df_rfc_dv = pd.concat(rfc_df_dv_list)
     df_rfc_dv.name = 'rfc_dv'
-    df_rfc_iv = pd.concatrfc_df_iv_list)
+    df_rfc_iv = pd.concat(rfc_df_iv_list)
     df_rfc_iv.name = 'rfc_iv'
     print('  Success!!!\n')
-    return {'usgs_dv':df_usgs_dv,
-            'usgs_iv':df_usgs_iv,
-            'rfc_dv':df_rfc_dv,
+    return {'rfc_dv':df_rfc_dv,
             'rfc_iv':df_rfc_iv}
 
 def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
     """
-    Get unique dates from usgs data, to ensure no duplicates
+    Get unique dates from rfc data, to ensure no duplicates
     """
     if not db_path.is_file():
         return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
@@ -231,7 +163,7 @@ def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
 
 
 def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
-             zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
+             zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=True):
     """
     Write dataframe to database
     """
@@ -265,11 +197,11 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
             if verbose:
                 print(f'        Prevented {initial_len - len(df_site.index)} duplicates')
         if verbose:
-            print(f'      Writing usgs_{site_id} to {db_name}...')
+            print(f'      Writing site_{site_id} to {db_name}...')
         try:
             con = sqlite3.connect(db_path)
             df_site.to_sql(
-                f"usgs_{site_id}",
+                f"site_{site}",
                 con,
                 if_exists=if_exists,
                 chunksize=10000,
@@ -293,7 +225,7 @@ def parse_args():
     """
     Arg parsing for command line use
     """
-    cli_desc = '''Creates sqlite db files for SNODAS swe and sd datatypes 
+    cli_desc = '''Creates sqlite db files for SHREAD swe and sd datatypes 
     from SHREAD output'''
 
     parser = argparse.ArgumentParser(description=cli_desc)
@@ -348,38 +280,17 @@ if __name__ == '__main__':
     # Identify SNOTEL sites:
     usgs_sites = pd.read_csv(os.path.join(this_dir, "usgs_gages.csv"),index_col=0)
 
-    for dtype in ["dv"]: #"iv"
-        for site_no in usgs_sites.index:
-            site = str(site_no)
-            if len(site)<8:
-                site = f"0{site}"
-
-            if "end" in str(usgs_sites.columns):
-                if usgs_sites.loc[site_no,"end"]==None:
-                    start = None
-                    usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
-                else:
-                    start = usgs_sites.loc[site_no,"end"]
-            else:
-                start = None
-                usgs_sites["end"] = None
-                usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
-
-            end = dt.datetime.now().strftime("%Y-%m-%d")
-
-            if (start!=end) and (site!="09362750"):
-                import_nwis(site,dtype,start,end,DEFAULT_CSV_DIR)
-
-            if str(usgs_sites.loc[site_no,"rfc"])!="nan":
-                import_rfc(usgs_sites.loc[site_no,"rfc"],dtype,"cbrfc",DEFAULT_CSV_DIR)
-    usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
+    for site_no in usgs_sites.index:
+        if str(usgs_sites.loc[site_no,"rfc"])!="nan":
+            for dtype in ["dv", "iv"]:
+                fcst_dt = import_rfc(usgs_sites.loc[site_no,"rfc"],dtype,"cbrfc",DEFAULT_CSV_DIR)
 
     # Arguments for db build
     args = parse_args()
     print(args)
 
     if args.version:
-        print('usgs_to_db.py v1.0')
+        print('rfc_to_db.py v1.0')
 
     for arg_path in [args.input, args.output]:
         if not Path(arg_path).is_dir():
@@ -387,12 +298,10 @@ if __name__ == '__main__':
             sys.exit(1)
 
     df_dict = get_dfs(Path(args.input), verbose=args.verbose)
-    df_usgs_dv = df_dict['usgs_dv']
-    df_usgs_iv = df_dict['usgs_iv']
     df_rfc_dv = df_dict['rfc_dv']
     df_rfc_iv = df_dict['rfc_iv']
 
-    for df in [df_usgs_dv,df_usgs_iv,df_rfc_dv,df_rfc_iv]:
+    for df in [df_rfc_dv,df_rfc_iv]:
         write_db(
             df,
             if_exists=args.exists,

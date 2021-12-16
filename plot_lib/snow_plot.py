@@ -67,7 +67,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         dlabel = "snow depth"
         slabel = "SNWD"
 
-    ## Process SNODAS data
+    ## Process SHREAD data
     # Filter data
     if basin == None:
         print("No basins selected.")
@@ -82,7 +82,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         if snodas_df.empty:
             snodas_plot = False
             snodas_max = np.nan
-            basin_stats_str = 'No valid SNODAS data for given parameters'
+            basin_stats_str = 'No valid SHREAD data for given parameters'
         else:
             # Calculate basin average values
             ba_snodas = ba_snodas_stats(snodas_df, dates)

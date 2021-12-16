@@ -84,6 +84,34 @@ def screen_snotel(site,s_date,e_date):
     out_df.index.name = None
     return (out_df)
 
+def screen_usgs(site,s_date,e_date,dtype):
+    bind = f'usgs_{dtype}'
+    qry = (
+        f"select * from site_{site} where "
+        f"`date` >= '{s_date}' "
+        f"and `date` <= '{e_date}' "
+    )
+    # print(db_type, bind, qry)
+    out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
+
+    out_df.index = pd.to_datetime(out_df['date'], utc=True)
+    out_df.index.name = None
+    return (out_df)
+
+def screen_rfc(site,fcst_dt,dtype):
+    bind = f'rfc_{dtype}'
+    qry = (
+        f"select * from site_{site} where "
+        f"`fcst_dt` = '{fcst_dt}' "
+    )
+    # print(db_type, bind, qry)
+    out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
+
+    out_df.index = pd.to_datetime(out_df['date'], utc=True)
+    out_df.index.name = None
+    return (out_df)
+
+
 # Function to calculate mean, median, 5th and 95th states for screened basin
 def ba_snodas_stats(df, dates):
     
