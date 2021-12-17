@@ -43,15 +43,22 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     :param end: str, end date (default is None)
     :return: dataframe with date index, dates, flows, month, year and water year
     """
+    # Output directory
+    if data_dir is not None:
+        if os.path.isdir(data_dir) is False:
+            os.mkdir(data_dir)
+
     # Correct dtype and dates
     if dtype == "dv":
         parameter = "00060_Mean"
         if start is None:
             start = "2004-01-01"
+        nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S+00:00")
     elif dtype == "iv":
         parameter = "00060"
         if start is None:
-            start = "2019-01-01"
+            start = "2021-12-01"
+        nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S-07:00")
 
     if (end is None) or (pd.to_datetime(end) >= dt.datetime.now()):
         end = dt.datetime.now().strftime("%Y-%m-%d")
@@ -60,7 +67,20 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     try:
         data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd="00060")
     except ValueError:
-        return(pd.DataFrame())
+        data = pd.DataFrame(columns=COL_TYPES.keys())
+        data.loc[0,:] = [nd_start,np.nan,site,f"usgs_{dtype}"]
+        if data_dir is None:
+            return(data)
+        else:
+            data.to_csv(Path(data_dir,f"{site}_{dtype}.csv"),index=False)
+        
+    if data.empty:
+        data = pd.DataFrame(columns=COL_TYPES.keys())
+        data.loc[0,:] = [nd_start,np.nan,site,f"usgs_{dtype}"]
+        if data_dir is None:
+            return(data)
+        else:
+            data.to_csv(Path(data_dir,f"{site}_{dtype}.csv"),index=False)
 
     # Prepare output with standard index
     start_date = data.index.min()
@@ -69,7 +89,8 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     if dtype == "dv":
         date_index = pd.date_range(start_date, end_date, freq="D")
     elif dtype == "iv":
-        date_index = pd.date_range(start_date, end_date, freq="15T")
+        data.index = pd.to_datetime(data.index)
+        date_index = pd.date_range(start_date, end_date,freq="15T")
 
     out = pd.DataFrame(index=date_index)
     out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
@@ -80,9 +101,6 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     if data_dir is None:
         return(out)
     else:
-        if os.path.isdir(data_dir) is False:
-            os.mkdir(data_dir)
-
         out["site"] = site
         out["type"] = f"usgs_{dtype}"
         out.to_csv(Path(data_dir,f"{site}_{dtype}.csv"), index_label="date")
@@ -270,16 +288,16 @@ if __name__ == '__main__':
                 start = usgs_sites.loc[site_no,"end"]
         else:
             start = None
-            usgs_sites["end"] = None
+            usgs_sites.loc[:,"end"] = None
             usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
 
         end = dt.datetime.now().strftime("%Y-%m-%d")
 
         for dtype in ["dv", "iv"]:
-            if (start!=end) and (site!="09362750"):
+            if (start!=end):
                 import_nwis(site,start,end,dtype,DEFAULT_CSV_DIR)
 
-    usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
+    #usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
 
     # Arguments for db build
     args = parse_args()

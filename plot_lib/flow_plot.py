@@ -83,10 +83,8 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
     # Create output dfs with standard index
     if dtype == "dv":
         dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
-        fcst_dt = (dt.datetime.now()+dt.timedelta(days=1)).strftime("%Y-%m-%d")
     elif dtype == "iv":
         dates = pd.date_range(start_date, end_date, freq="15T", tz='UTC')
-        fcst_dt = dt.datetime.now().strftime("%Y-%m-%d")
 
     # Create dataframes for data, names and rfc sites
     usgs_f_df = pd.DataFrame(index=dates)
@@ -115,23 +113,27 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
         for g in usgs_sel:
             if pd.isna(usgs_gages.loc[int(g),"rfc"])==False:
                 rfc = usgs_gages.loc[int(g),"rfc"]
-                name_df.loc[g,"rfc"] = f"RFC {rfc}"
-                name_df.loc[g,"name"] = f'{name_df.loc[g, "usgs"]} ({name_df.loc[g,"rfc"]})'
                 print(rfc)
 
                 if offline:
-                    rfc_in = screen_rfc(rfc,fcst_dt,dtype)
+                    rfc_in,fcst_dt = screen_rfc(rfc,fcst_dt,dtype)
                 else:
-                    rfc_in = import_rfc(rfc, dtype)
+                    rfc_in,fcst_dt = import_rfc(rfc,dtype)
 
+                usgs_interp = True
                 if dtype == "dv":
                     rfc_in.index = rfc_in.index + dt.timedelta(hours=-12)
                     usgs_last = usgs_f_df[g].dropna().index.max()
+                    if pd.isna(usgs_last):
+                        usgs_interp = False
 
                 rfc_in = rfc_f_df.merge(rfc_in["flow"], left_index=True, right_index=True, how="left")
-                if (dtype == "dv") and (pd.isna(rfc_in.loc[usgs_last,"flow"])):
+                if (dtype == "dv") and (usgs_interp):
                     rfc_in.loc[usgs_last,"flow"] = usgs_f_df.loc[usgs_last,g]
                 rfc_f_df[g] = rfc_in["flow"].interpolate()
+
+                name_df.loc[g,"rfc"] = f"RFC {rfc} {fcst_dt}"
+                name_df.loc[g,"name"] = f'{name_df.loc[g, "usgs"]} ({name_df.loc[g,"rfc"]})'
 
     if len(usgs_sel) > 0:
         flow_max = usgs_f_df.max().max()

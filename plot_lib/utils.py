@@ -120,7 +120,7 @@ def screen_rfc(site,fcst_dt,dtype):
 
     out_df.index = pd.to_datetime(out_df['date'], utc=True)
     out_df.index.name = None
-    return (out_df)
+    return (out_df,fcst_dt)
 
 
 # Function to calculate mean, median, 5th and 95th states for screened basin

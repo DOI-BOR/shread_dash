@@ -36,8 +36,8 @@ db = SQLAlchemy(app.server)
 db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")
 binds = db.get_binds()
-SENSOR = 'usgs_dv' # or 'usgs_iv'
-s_date = '2021-12-05'
+SENSOR = 'usgs_iv' # or 'usgs_iv'
+s_date = '2021-10-05'
 e_date = '2021-12-17'
 
 bind_dict = {
@@ -59,7 +59,7 @@ for site in sites:
     df = pd.read_sql(
         qry,
         db.get_engine(bind=bind),
-        parse_dates=['date','fcst_dt'],
+        parse_dates=['date'],
     )
     print(df.max())
     #sys.exit(0)

@@ -96,14 +96,15 @@ def import_rfc(site,dtype,rfc = "cbrfc",data_dir=None,verbose=False):
     rfc_dat.index = rfc_dat.datetime
     rfc_dat = rfc_dat.drop(columns=["DATE","TIME","datetime","FLOW"])
     rfc_dat = rfc_dat.tz_localize("UTC")
+    fcst_dt = rfc_dat.index.min().date().strftime("%Y-%m-%d")
 
     if data_dir is None:
-        return (rfc_dat)
+        return (rfc_dat,fcst_dt)
     else:
         if os.path.isdir(data_dir) is False:
             os.mkdir(data_dir)
 
-        fcst_dt = rfc_dat.index.min().date().strftime("%Y-%m-%d")
+
         rfc_dat["site"] = site
         rfc_dat["type"] = f"rfc_{dtype}"
         rfc_dat["fcst_dt"] = fcst_dt
