@@ -34,7 +34,7 @@ COL_TYPES = {
 }
 
 # Define functions
-def import_nwis(site,dtype,start=None,end=None,data_dir=None):
+def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     """
     Imports flows from NWIS site
     :param site: str, FLOW site number
@@ -57,11 +57,10 @@ def import_nwis(site,dtype,start=None,end=None,data_dir=None):
         end = dt.datetime.now().strftime("%Y-%m-%d")
 
     # Import data
-    data = pd.DataFrame()
     try:
         data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd="00060")
     except ValueError:
-        data["flow"] = np.nan
+        return(pd.DataFrame())
 
     # Prepare output with standard index
     start_date = data.index.min()
@@ -278,7 +277,7 @@ if __name__ == '__main__':
 
         for dtype in ["dv", "iv"]:
             if (start!=end) and (site!="09362750"):
-                import_nwis(site,dtype,start,end,DEFAULT_CSV_DIR)
+                import_nwis(site,start,end,dtype,DEFAULT_CSV_DIR)
 
     usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
 

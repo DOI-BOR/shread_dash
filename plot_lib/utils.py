@@ -100,6 +100,17 @@ def screen_usgs(site,s_date,e_date,dtype):
 
 def screen_rfc(site,fcst_dt,dtype):
     bind = f'rfc_{dtype}'
+
+    # Check for last forecast date
+    if fcst_dt=="last":
+        unique_dates = pd.read_sql(
+            f'select distinct fcst_dt from site_{site}',
+            db.get_engine(bind=bind),parse_dates=['fcst_dt']
+        ).dropna()
+        last = unique_dates.max().item()
+        fcst_dt = last.strftime("%Y-%m-%d")
+        #print(fcst_dt)
+
     qry = (
         f"select * from site_{site} where "
         f"`fcst_dt` = '{fcst_dt}' "

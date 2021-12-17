@@ -6,7 +6,6 @@ set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
-python C:\Programs\shread_plot\database\FLOW\usgs_to_db.py
 python C:\Programs\shread_plot\database\FLOW\rfc_to_db.py
 pause
 
