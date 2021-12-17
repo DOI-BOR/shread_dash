@@ -20,8 +20,8 @@ from io import StringIO
 import dataretrieval.nwis as nwis
 
 # Load directories and defaults
-#this_dir = Path(__file__).absolute().resolve().parent
-this_dir = Path('C:/Programs/shread_plot/database/FLOW')
+this_dir = Path(__file__).absolute().resolve().parent
+#this_dir = Path('C:/Programs/shread_plot/database/FLOW')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
@@ -250,7 +250,7 @@ def parse_args():
         "-e", "--exists",
         help="behavior if database table exists already",
         choices=['replace', 'append', 'fail'],
-        default='append'
+        default='replace'
     )
     parser.add_argument(
         "-c", "--check_dups",
@@ -284,7 +284,10 @@ if __name__ == '__main__':
     for site_no in usgs_sites.index:
         if str(usgs_sites.loc[site_no,"rfc"])!="nan":
             for dtype in ["dv", "iv"]:
+                print(f'Downloading data for {usgs_sites.loc[site_no,"rfc"]}')
                 fcst_dt = import_rfc(usgs_sites.loc[site_no,"rfc"],dtype,"cbrfc",DEFAULT_CSV_DIR)
+
+    # TODO: fix duplicate issues
 
     # Arguments for db build
     args = parse_args()

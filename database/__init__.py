@@ -17,8 +17,7 @@ import dash
 this_dir = os.path.dirname(os.path.realpath(__file__))
 app_dir = os.path.dirname(this_dir)
 
-#this_dir = os.path.dirname(os.path.realpath(__file__))
-this_dir = Path('C:/Programs/shread_plot/database')
+#this_dir = Path('C:/Programs/SNODAS_plot/database')
 app_dir = os.path.dirname(this_dir)
 
 def create_app():
@@ -82,7 +81,7 @@ res_dir = os.path.join(app_dir, 'resources')
 #switch working dir back to main dir so dash app can function correctly
 os.chdir(app_dir)	  
 
-print('Calculating bounds of SHREAD.db')
+print('Calculating bounds of SNODAS.db')
 # Create list of basins
 # df_local_ids = pd.read_sql(
 # 'select distinct LOCAL_ID as LOCAL_ID, LOCAL_NAME from sd', db.engine).dropna()

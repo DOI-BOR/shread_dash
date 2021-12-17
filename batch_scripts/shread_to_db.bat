@@ -18,10 +18,12 @@ call python %shread_dir%shread/shread.py -i shread_config_example.ini -s %sdate%
 TITLE Updating DB with new data...
 set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
-cd %shread_dir%shread_plot\database\SNODAS\
+cd %shread_dir%shread_plot\database\SHREAD\
 @ECHO ON
 python shread_to_db.py
 @ECHO OFF
 
 TITLE Removing files...
 del shread_data\*
+
+exit

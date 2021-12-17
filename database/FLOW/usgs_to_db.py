@@ -20,8 +20,8 @@ from io import StringIO
 import dataretrieval.nwis as nwis
 
 # Load directories and defaults
-#this_dir = Path(__file__).absolute().resolve().parent
-this_dir = Path('C:/Programs/shread_plot/database/FLOW')
+this_dir = Path(__file__).absolute().resolve().parent
+#this_dir = Path('C:/Programs/shread_plot/database/FLOW')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
@@ -73,7 +73,8 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
             return(data)
         else:
             data.to_csv(Path(data_dir,f"{site}_{dtype}.csv"),index=False)
-        
+            return
+
     if data.empty:
         data = pd.DataFrame(columns=COL_TYPES.keys())
         data.loc[0,:] = [nd_start,np.nan,site,f"usgs_{dtype}"]
@@ -81,6 +82,7 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
             return(data)
         else:
             data.to_csv(Path(data_dir,f"{site}_{dtype}.csv"),index=False)
+            return
 
     # Prepare output with standard index
     start_date = data.index.min()
@@ -243,7 +245,7 @@ def parse_args():
         "-e", "--exists",
         help="behavior if database table exists already",
         choices=['replace', 'append', 'fail'],
-        default='append'
+        default='replace'
     )
     parser.add_argument(
         "-c", "--check_dups",
@@ -298,6 +300,8 @@ if __name__ == '__main__':
                 import_nwis(site,start,end,dtype,DEFAULT_CSV_DIR)
 
     #usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
+
+    #TODO: fix duplicate issues
 
     # Arguments for db build
     args = parse_args()
