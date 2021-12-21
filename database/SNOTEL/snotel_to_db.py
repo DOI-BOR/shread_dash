@@ -63,7 +63,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
         tries = 0
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=5).text
+                csv_str = r_get(site_url, timeout=30).text
                 failed = False
             except TimeoutError:
                 raise Exception("Timeout; Data unavailable?")

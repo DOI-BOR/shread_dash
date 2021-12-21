@@ -164,7 +164,7 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
             tries = 0
             while failed:
                 try:
-                    csv_str = r_get(site_url,timeout=None,verify=True).text
+                    csv_str = r_get(site_url,timeout=None,verify=False).text
                     failed = False
                 except TimeoutError:
                     raise Exception("Timeout; Data unavailable?")

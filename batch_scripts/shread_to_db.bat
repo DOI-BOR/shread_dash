@@ -26,4 +26,8 @@ python shread_to_db.py
 TITLE Removing files...
 del shread_data\*
 
-exit
+pause
+
+:GET_THIS_DIR
+set THIS_DIR=%~dp0
+pushd %THIS_DIR%
