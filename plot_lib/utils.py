@@ -42,34 +42,6 @@ def screen_snodas(db_type, s_date, e_date, basin, aspects=[0, 360],
     out_df.index.name = None
     return (out_df)
 
-# Function to screen data by basin, aspect, elevation and slopes (using points)
-def screen(input_df, basin, aspects=[0, 360], elrange=[0, 20000], slopes=[0, 100]):
-    """
-    # Function to screen gridded/point datasets
-    :param input_df: the input dataframe
-    :param basin:
-    :param aspects:
-    :param elrange:
-    :param slopes:
-    :return:
-    """
-    if aspects[0] < 0:
-        minaspect = 360 + aspects[0]
-        out_df = input_df[
-            (input_df["aspct"] >= minaspect) | (input_df["aspct"] <= aspects[1])
-        ]
-    else:
-        out_df = input_df[
-            (input_df["aspct"] >= aspects[0]) & (input_df["aspct"] <= aspects[1])
-        ]
-
-    out_df = out_df[(out_df["elev_ft"] >= elrange[0]) &
-                    (out_df["elev_ft"] <= elrange[1]) &
-                    (out_df["slope_d"] >= slopes[0]) &
-                    (out_df["slope_d"] <= slopes[1]) &
-                    (out_df["LOCAL_ID"].isin(basin))]
-    return (out_df)
-
 # Function to calculate mean, median, 5th and 95th states for screened basin
 def ba_stats(df, dates):
     ba_df = df[['Date', 'mean']].groupby(
@@ -78,24 +50,78 @@ def ba_stats(df, dates):
     ).describe(percentiles=[0.05, 0.5, 0.95]).droplevel(0, axis=1)
     return ba_df
 
-    # ba_df = pd.DataFrame(index=dates)
-    # for d in dates:
-    #     ba_df_daily = input_df.loc[input_df.index == d, "mean"]
-    #     if len(ba_df_daily) == 0:
-    #         ba_df.loc[d, "mean"] = np.nan
-    #         ba_df.loc[d, "median"] = np.nan
-    #         ba_df.loc[d, "max"] = np.nan
-    #         ba_df.loc[d, "min"] = np.nan
-    #     else:
-    #         ba_df.loc[d, "mean"] = ba_df_daily.mean()
-    #         ba_df.loc[d, "median"] = ba_df_daily.median()
-    #         ba_df_daily = ba_df_daily.fillna(0)
-    #         ba_df_daily_ex = ba_df_daily.sort_values(ignore_index=1)
-    #         d_95 = int(len(ba_df_daily_ex) * 0.95)
-    #         d_05 = int(len(ba_df_daily_ex) * 0.05)
-    #         ba_df.loc[d, "max"] = ba_df_daily_ex.loc[d_95]
-    #         ba_df.loc[d, "min"] = ba_df_daily_ex.loc[d_05]
-    # return ba_df
+# Function to screen csas data by site and date
+def screen_csas(site,s_date,e_date,dtype):
+    bind_dict = {
+        'iv': 'csas_iv',
+        'dv': 'csas_dv'
+    }
+    bind = bind_dict[dtype]
+    qry = (
+        f"select * from {site} where "
+        f"`date` >= '{s_date}' "
+        f"and `date` <= '{e_date}' "
+    )
+    # print(db_type, bind, qry)
+    out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
+
+    out_df.index = pd.to_datetime(out_df['date'], utc=True)
+    out_df.index.name = None
+    return (out_df)
+
+# Function to screen snotel data by site and date
+def screen_snotel(site,s_date,e_date):
+    bind = 'snotel_dv'
+    qry = (
+        f"select * from {site} where "
+        f"`date` >= '{s_date}' "
+        f"and `date` <= '{e_date}' "
+    )
+    # print(db_type, bind, qry)
+    out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
+
+    out_df.index = pd.to_datetime(out_df['date'], utc=True)
+    out_df.index.name = None
+    return (out_df)
+
+def screen_usgs(site,s_date,e_date,dtype):
+    bind = f'usgs_{dtype}'
+    qry = (
+        f"select * from site_{site} where "
+        f"`date` >= '{s_date}' "
+        f"and `date` <= '{e_date}' "
+    )
+    # print(db_type, bind, qry)
+    out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
+
+    out_df.index = pd.to_datetime(out_df['date'], utc=True)
+    out_df.index.name = None
+    return (out_df)
+
+def screen_rfc(site,fcst_dt,dtype):
+    bind = f'rfc_{dtype}'
+
+    # Check for last forecast date
+    if fcst_dt=="last":
+        unique_dates = pd.read_sql(
+            f'select distinct fcst_dt from site_{site}',
+            db.get_engine(bind=bind),parse_dates=['fcst_dt']
+        ).dropna()
+        last = unique_dates.max().item()
+        fcst_dt = last.strftime("%Y-%m-%d")
+        #print(fcst_dt)
+
+    qry = (
+        f"select * from site_{site} where "
+        f"`fcst_dt` = '{fcst_dt}' "
+    )
+    # print(db_type, bind, qry)
+    out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
+
+    out_df.index = pd.to_datetime(out_df['date'], utc=True)
+    out_df.index.name = None
+    return (out_df,fcst_dt)
+
 
 # Function to calculate mean, median, 5th and 95th states for screened basin
 def ba_snodas_stats(df, dates):

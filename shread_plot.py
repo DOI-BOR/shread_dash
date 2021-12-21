@@ -4,7 +4,7 @@ Created on Wed Dec 23 16:35:45 2020
 @author: tclarkin
 """
 ### Import Dependencies & Define Functions
-					
+
 import os
 import json
 import datetime as dt
@@ -19,7 +19,7 @@ from dash.dependencies import Input, Output, State
 
 import database
 from database import basin_list
-from database import start_date, end_date, forc_disable, dust_disable
+from database import start_date, end_date, dust_disable
 from database import snotel_list, usgs_list, csas_list
 from database import sloperange, elevrange, aspectdict, elevdict, slopedict
 
@@ -78,9 +78,6 @@ def get_navbar():
                             dbc.DropdownMenuItem("Now", id="set_now"),
                             dbc.DropdownMenuItem("2022", id="2022_window"),
                             dbc.DropdownMenuItem("2021", id="2021_window"),
-                            #dbc.DropdownMenuItem("2019", id="2019_retro"),
-                            #dbc.DropdownMenuItem("2017", id="2017_retro"),
-                            #dbc.DropdownMenuItem("2012", id="2012_retro"),
                         ],
                     )
                 ]
@@ -138,10 +135,6 @@ def get_layout():
                             dbc.FormGroup(
                                 [
                                     html.H4('Select basin:'),
-                                    #dbc.RadioItems(
-                                    #    id='basin',
-                                    #    options=basin_list,
-                                    #    value=None),
                                     dcc.Dropdown(
                                         id='basin',
                                         options=basin_list,
@@ -192,16 +185,6 @@ def get_layout():
                                 start_date=start_date,
                                 end_date=end_date,
                             ),
-                            #dbc.Button(
-                            #    "Step 1 day",
-                            #    id="1step_button",
-                            #    color="secondary"
-                            #),
-                            #dbc.Button(
-                            #    "Step 1 week",
-                            #    id="7step_button",
-                            #color = "dark"
-                            #),
                             html.Div(html.P()),
                             dbc.RadioItems(
                                 id='dtype',
@@ -223,6 +206,15 @@ def get_layout():
                     dbc.Col(dbc.FormGroup(
                         [
                             html.H4('Select other options:'),
+                            dbc.Checkbox(
+                                id='offline',
+                                checked=True,
+                            ),
+                            dbc.Label(
+                                "Offline Mode",
+                                style=dict(marginLeft=10),
+                                html_for="offline",
+                            ),
                             dbc.RadioItems(
                                 id='stype',
                                 options=[{'label': "SWE", 'value': "swe"},
@@ -231,16 +223,6 @@ def get_layout():
                                 inline=True
                             ),
                             html.Div(html.P()),
-                            dbc.Checkbox(
-                                id='plot_forc',
-                                disabled=forc_disable,
-                            ),
-                            dbc.Label(
-                                "Include Radiative Forcing",
-                                style=dict(marginLeft=10),
-                                html_for="plot_forc"
-                            ),
-                            html.Div(html.B()),
                             dbc.Checkbox(
                                 id='plot_dust',
                                 disabled=dust_disable,
@@ -252,10 +234,19 @@ def get_layout():
                             ),
                             html.Div(html.B()),
                             dbc.Checkbox(
+                                id='plot_albedo_snow',
+                            ),
+                            dbc.Label(
+                                "Plot CSAS Albedo on Snow Plot",
+                                style=dict(marginLeft=10),
+                                html_for="plot_albedo_snow",
+                            ),
+                            html.Div(html.B()),
+                            dbc.Checkbox(
                                 id='plot_albedo_met',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with Meteo",
+                                "Plot CSAS Albedo on Meteo Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_met",
                             ),
@@ -264,7 +255,7 @@ def get_layout():
                                 id='plot_albedo_flow',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with Flow",
+                                "Plot CSAS Albedo on Flow Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_flow",
                             ),
@@ -273,7 +264,7 @@ def get_layout():
                                 id='plot_albedo_csas',
                             ),
                             dbc.Label(
-                                "Plot CSAS Albedo with CSAS",
+                                "Plot CSAS Albedo on CSAS Plot",
                                 style=dict(marginLeft=10),
                                 html_for="plot_albedo_csas",
                             )
@@ -281,7 +272,7 @@ def get_layout():
                     ))
                 ]
             ),
-    
+
             dbc.Row(
                 [
                     dbc.Col(dbc.FormGroup(
@@ -297,7 +288,7 @@ def get_layout():
                             dcc.Dropdown(
                                 id='usgs_sel',
                                 options=usgs_list,
-                                placeholder="Select USGS gages",
+                                placeholder="Select FLOW gages",
                                 value=[],
                                 multi=True),
                             html.Div(html.B()),
@@ -361,132 +352,10 @@ def get_layout():
                     ))
                 ]
             ),
-            dbc.Row(
-                [
-                    dbc.Col(dbc.FormGroup(
-                        [
-                            dbc.Button(
-                                "Retry CSAS",
-                                id="csas_replot",
-                                color="light"
-                                ),
-                            ]
-                        ),
-                        width=2
-                    ),
-                    dbc.Col(dbc.FormGroup(
-                        [
-                            html.Div(
-                                id='csas_message',
-                            )
-                        ]
-                    ))
-                ]
-            )
-            # In development
-            # dbc.Row(
-            #     [
-            #         dbc.Col(dbc.FormGroup(
-            #             [
-            #                 dcc.RangeSlider(
-            #                     id='sync_pan',
-            #                     min=unixTimeMillis(start_date),
-            #                     max=unixTimeMillis(end_date),
-            #                     value=[unixTimeMillis(start_date),unixTimeMillis(end_date)],
-            #                     step=86400000,
-            #                     marks=getMarks(start_date,end_date)
-            #                     )
-            #             ]
-            #         ))
-            #     ]
-            # )
         ]
     )
 
 app.layout = get_layout()
-
-### INTERACTIONS
-
-## In development
-# @app.callback(
-#     Output('sync_pan', 'min'),
-#     Output('sync_pan', 'max'),
-#     Output('sync_pan', 'value'),
-#     Output('sync_pan', 'marks'),
-#     [Input('date_selection', 'start_date'),
-#      Input('date_selection', 'end_date'),
-#      ]
-# )
-# def change_date_slider(start_date,end_date):
-#     """
-#     :description: this function changes the range of the date slider
-#     :param start_date: the start date selected
-#     :param end_date: the end date selected
-#     :return: updated min, max, values and marks for slider
-#     """
-#
-#     dates = pd.date_range(start_date,end_date,freq="D",tz="UTC")
-#     start = dt.datetime.strptime(start_date, "%Y-%m-%d")
-#     end = dt.datetime.strptime(end_date, "%Y-%m-%d")
-#     minv = unixTimeMillis(start)
-#     maxv = unixTimeMillis(end)
-#     value = [unixTimeMillis(start),unixTimeMillis(end)]
-#     if len(dates) < 30:
-#         n = 24
-#     elif (len(dates) >= 30) & (len(dates) <= 90):
-#         n = 7*24
-#     elif len(dates) > 90:
-#         n = 30*24
-#     marks = getMarks(start,end,Nth=n)
-#
-#     return(minv,maxv,value,marks)
-#
-# @app.callback(
-#     Output('snow_plot', 'figure'),
-#     Output('met_pan', 'figure'),
-#     Output('flow_pan', 'figure'),
-#     [Input('sync_pan', 'value'),
-#     State('snow_plot', 'figure'),
-#     State('met_plot', 'figure'),
-#     State('flow_plot', 'figure')
-#      ]
-# )
-# def sync_pan_figures(value,snow_fig,met_fig,flow_fig):
-#     """
-#     :description: this function changes the range of the dates in the figures
-#     :param value: from range slider
-#     :param figs: each of the figures being updated
-#     :return: updated figure layouts
-#     """
-#     snow_fig["layout"] = {'xaxis':{'range': [unixToDatetime(value[0]),
-#                                              unixToDatetime(value[1])]}}
-#     met_fig["layout"] = {'xaxis' : {'range': [unixToDatetime(value[0]),
-#                                                unixToDatetime(value[1])]}}
-#     flow_fig["layout"] = {'xaxis' : {'range': [unixToDatetime(value[0]),
-#                                                unixToDatetime(value[1])]}}
-#     return(snow_fig,met_fig,flow_fig)
-
-@app.callback(
-    Output('csas_sel', 'disabled'),
-    Output('plot_albedo_flow', 'disabled'),
-    Output('plot_albedo_met', 'disabled'),
-    Output('plot_dust', 'disabled'),
-    Output('plot_albedo_csas','disabled'),
-    [Input('date_selection', 'start_date'),
-     Input('date_selection', 'end_date')]
-)
-def disable_csas(start_date,end_date):
-    """
-    :description: this function disables CSAS data for the current year...the csas website is too inconsistent to include.
-    :param start_date: the start date selected
-    :param end_date: the end date selected
-    :return: series of booleans (True/False)
-    """
-    if (start_date>"2020-12-30") & (end_date>"2020-12-30"):
-        print("csas disabled.")
-        return(False,True,True,False,False)
-    if (start_date<="2020-12-30") & (end_date<="2020-12-30"):
-        return(False,False,False,False,False)
 
 @app.callback(
     Output('plot_forecast', 'disabled'),
@@ -515,7 +384,6 @@ def disable_forecast(end_date,plot_forecast):
     Output('plot_forecast', 'value'),
     Output('plot_albedo_flow', 'value'),
     Output('stype', 'value'),
-    Output('plot_forc', 'value'),
     Output('plot_dust', 'value'),
     Output('plot_albedo_met', 'value'),
     Output('snotel_sel', 'value'),
@@ -543,7 +411,6 @@ def load_presets(a,b,c,d,e):
     frcst = presets.loc[id,"frcst"]
     albedo_flow = presets.loc[id,"albedo_flow"]
     stypes = presets.loc[id,"stypes"]
-    forcs = presets.loc[id,"forcs"]
     dusts = presets.loc[id,"dusts"]
     albedo_met = presets.loc[id,"albedo_met"]
     snotels = presets.loc[id,"snotels"]
@@ -553,19 +420,14 @@ def load_presets(a,b,c,d,e):
     aspects = presets.loc[id,"aspects"]
     slopes = presets.loc[id,"slopes"]
 
-    return(basins,dtypes,frcst,albedo_flow,stypes,forcs,dusts,albedo_met,snotels,usgss,csass,elevations,aspects,slopes)
+    return(basins,dtypes,frcst,albedo_flow,stypes,dusts,albedo_met,snotels,usgss,csass,elevations,aspects,slopes)
 
 @app.callback(
     Output('date_selection', 'start_date'),
     Output('date_selection', 'end_date'),
-    [#Input('2012_retro', 'n_clicks'),
-     #Input('2017_retro', 'n_clicks'),
-     #Input('2019_retro', 'n_clicks'),
-     Input('set_now', 'n_clicks'),
+    [Input('set_now', 'n_clicks'),
      Input('2021_window', 'n_clicks'),
      Input('2022_window', 'n_clicks'),
-     #Input('7step_button','n_clicks'),
-     #Input('1step_button','n_clicks'),
      State('date_selection', 'start_date'),
      State('date_selection', 'end_date')]
 )
@@ -575,31 +437,13 @@ def load_preset_dates(a,b,c,start,end):
     :return: user specified dates
     """
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    # if '2012_retro' in changed_id:
-    #     start_date = "2012-02-01"
-    #     end_date = "2012-02-15"
-    # elif '2017_retro' in changed_id:
-    #     start_date = "2017-03-01"
-    #     end_date = "2017-03-15"
-    # elif '2019_retro' in changed_id:
-    #     start_date = "2019-03-01"
-    #     end_date = "2019-03-15"
+
     if '2021_window' in changed_id:
         start_date = "2021-01-01"
         end_date = "2021-07-01"
     elif '2022_window' in changed_id:
         start_date = "2021-11-01"
         end_date = dt.datetime.now().date() + dt.timedelta(days=10)
-    # elif '7step_button' in changed_id:
-    #     start_date = dt.datetime.strptime(start, "%Y-%m-%d") + dt.timedelta(days=7)
-    #     start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
-    #     end_date = dt.datetime.strptime(end, "%Y-%m-%d") + dt.timedelta(days=7)
-    #     end_date = dt.datetime.strftime(end_date, "%Y-%m-%d")
-    # elif '1step_button' in changed_id:
-    #     start_date = dt.datetime.strptime(start, "%Y-%m-%d") + dt.timedelta(days=1)
-    #     start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
-    #     end_date = dt.datetime.strptime(end, "%Y-%m-%d") + dt.timedelta(days=1)
-    #     end_date = dt.datetime.strftime(end_date, "%Y-%m-%d")
     else:
         start_date = dt.datetime.now().date() - dt.timedelta(days=10)
         start_date = dt.datetime.strftime(start_date, "%Y-%m-%d")
@@ -619,13 +463,17 @@ def load_preset_dates(a,b,c,start,end):
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('snotel_sel', 'value'),
+        Input('csas_sel','value'),
+        Input('plot_albedo_snow','checked'),
+        Input('offline','checked')
     ])
-def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date, 
-                     end_date, snotel_sel):
-   
+def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
+                     end_date, snotel_sel,csas_sel,plot_albedo,offline):
+
     fig, basin_stats = get_snow_plot(
-        basin, stype, elrange, aspects, slopes, start_date, 
-        end_date, snotel_sel
+        basin, stype, elrange, aspects, slopes, start_date,
+        end_date, snotel_sel,csas_sel,plot_albedo,
+        offline
     )
     return fig, basin_stats
 
@@ -633,7 +481,6 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     Output('met_plot', 'figure'),
     [
         Input('basin', 'value'),
-        Input('plot_forc', 'checked'),
         Input('elevations', 'value'),
         Input('aspects', 'value'),
         Input('slopes', 'value'),
@@ -642,14 +489,17 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         Input('snotel_sel', 'value'),
         Input('csas_sel','value'),
         Input('plot_albedo_met','checked'),
-        Input('dtype', 'value')
+        Input('dtype', 'value'),
+        Input('offline','checked'),
     ])
-def update_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date, 
-                    end_date, snotel_sel, csas_sel, plot_albedo, dtype):
-    
+def update_met_plot(basin, elrange, aspects, slopes, start_date,
+                    end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+                    offline):
+
     fig = get_met_plot(
-        basin, plot_forc, elrange, aspects, slopes, start_date, 
-        end_date, snotel_sel, csas_sel, plot_albedo, dtype
+        basin, elrange, aspects, slopes, start_date,
+        end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+        offline
     )
     return fig
 
@@ -662,20 +512,21 @@ def update_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('csas_sel','value'),
-        Input('plot_albedo_flow','checked')
+        Input('plot_albedo_flow','checked'),
+        Input('offline','checked'),
     ])
 def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
-                     csas_sel, plot_albedo):
+                     csas_sel, plot_albedo,
+                     offline):
 
     fig = get_flow_plot(
-        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo
+        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo,
+        offline
     )
     return fig
 
 @app.callback(
     Output('csas_plot', 'figure'),
-    Output('csas_message',"children"),
-    Output('csas_replot','color'),
     [
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
@@ -683,13 +534,13 @@ def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
         Input('csas_sel', 'value'),
         Input('dtype', 'value'),
         Input('plot_albedo_csas','checked'),
-        Input('csas_replot','n_clicks'),
+        Input('offline','checked'),
     ])
-def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,n_clicks):
+def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,offline):
 
-    fig,message,csas_color = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo)
+    fig = get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,offline)
 
-    return fig,message,csas_color
+    return fig
 
 ### LAUNCH
 if __name__ == '__main__':

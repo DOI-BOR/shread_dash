@@ -108,12 +108,23 @@ dmypy.json
 .pyre/
 
 # raw data
+database/*.csv
 database/CSAS/*.csv
-database/SNODAS/*.csv
-database/SNODAS/shread_data/*.csv
+database/CSAS/*.db
+database/CSAS/csas_archive/*.csv
+database/CSAS/data/*
+database/SHREAD/*.tif
+database/SHREAD/*.db
+database/SHREAD/data/*.tif
+database/SHREAD/data/*.csv
+database/FLOW/*.db
+database/FLOW/usgs_data/*.csv
+database/FLOW/rfc_data/*.csv
+database/SNOTEL/*.db
+database/SNOTEL/data/*.csv
+*.tif
 *.db
 *.zip
-database/*.csv
 
 # .idea folder
 .idea/

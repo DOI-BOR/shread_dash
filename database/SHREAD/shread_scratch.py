@@ -18,15 +18,12 @@ def create_app(db_path):
     app = dash.Dash(
         __name__,
     )
-    #snodas_all_db_path = Path(db_path, 'snodas.db')
     snodas_swe_db_path = Path(db_path, 'swe.db')
     snodas_sd_db_path = Path(db_path, 'sd.db')
     print(snodas_sd_db_path)
-    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
         'swe': snodas_swe_db_con_str,
         'sd': snodas_sd_db_con_str

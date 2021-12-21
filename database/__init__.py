@@ -2,7 +2,7 @@
 """
 Created on Sun Mar 21 11:55:27 2021
 
-@author: buriona
+@author: buriona, tclarkin
 """
 
 import os
@@ -17,6 +17,9 @@ import dash
 this_dir = os.path.dirname(os.path.realpath(__file__))
 app_dir = os.path.dirname(this_dir)
 
+#this_dir = Path('C:/Programs/SNODAS_plot/database')
+app_dir = os.path.dirname(this_dir)
+
 def create_app():
     assets_path = Path(app_dir, 'assets')
     app = dash.Dash(
@@ -28,17 +31,36 @@ def create_app():
     )
     app.title="WCAO Dashboard"
     db_path = Path(app_dir, 'database')
-    #snodas_all_db_path = Path(db_path, 'SNODAS', 'snodas.db')
-    snodas_swe_db_path = Path(db_path, 'SNODAS', 'swe.db')
-    snodas_sd_db_path = Path(db_path, 'SNODAS', 'sd.db')
-    #snodas_all_db_con_str = f'sqlite:///{snodas_all_db_path.as_posix()}'
+    snodas_swe_db_path = Path(db_path, 'SHREAD', 'swe.db')
+    snodas_sd_db_path = Path(db_path, 'SHREAD', 'sd.db')
+    csas_iv_db_path = Path(db_path, 'CSAS', 'csas_iv.db')
+    csas_dv_db_path = Path(db_path, 'CSAS', 'csas_dv.db')
+    snotel_dv_db_path = Path(db_path, 'SNOTEL', 'snotel_dv.db')
+    usgs_dv_db_path = Path(db_path, 'FLOW', 'usgs_dv.db')
+    usgs_iv_db_path = Path(db_path, 'FLOW', 'usgs_iv.db')
+    rfc_dv_db_path = Path(db_path, 'FLOW', 'rfc_dv.db')
+    rfc_iv_db_path = Path(db_path, 'FLOW', 'rfc_iv.db')
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
+    csas_iv_db_con_str = f'sqlite:///{csas_iv_db_path.as_posix()}'
+    csas_dv_db_con_str = f'sqlite:///{csas_dv_db_path.as_posix()}'
+    snotel_dv_db_con_str = f'sqlite:///{snotel_dv_db_path.as_posix()}'
+    usgs_dv_db_con_str = f'sqlite:///{usgs_dv_db_path.as_posix()}'
+    usgs_iv_db_con_str = f'sqlite:///{usgs_iv_db_path.as_posix()}'
+    rfc_dv_db_con_str = f'sqlite:///{rfc_dv_db_path.as_posix()}'
+    rfc_iv_db_con_str = f'sqlite:///{rfc_iv_db_path.as_posix()}'
+
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    #app.server.config['SQLALCHEMY_DATABASE_URI'] = snodas_all_db_con_str
     app.server.config['SQLALCHEMY_BINDS'] = {
         'swe': snodas_swe_db_con_str,
-        'sd': snodas_sd_db_con_str
+        'sd': snodas_sd_db_con_str,
+        'csas_iv':csas_iv_db_con_str,
+        'csas_dv':csas_dv_db_con_str,
+        'snotel_dv':snotel_dv_db_con_str,
+        'usgs_dv':usgs_dv_db_con_str,
+        'usgs_iv':usgs_iv_db_con_str,
+        'rfc_dv':rfc_dv_db_con_str,
+        'rfc_iv':rfc_iv_db_con_str
     }
 
     return app
@@ -46,40 +68,6 @@ def create_app():
 app = create_app()
 db = SQLAlchemy(app.server)
 db.reflect()
-
-# Define Functinos
-def db_import(data_file):
-    """
-    # Function to import csv db files
-    :param data_file: the file path
-    :return: df, database in a date indexed dataframe
-    """
-    db = pd.read_csv(data_file)
-    db.index = pd.to_datetime(db.Date)
-    db = db.tz_localize("UTC")
-
-    return (db)
-
-
-# Function to import csv db files
-def csas_db_import(data_file, dtype, db_dir=this_dir):
-    """
-    # Function to import CSAS db data
-    :param data_file: the file path
-    :param type: :dv: or :iv:, time step
-    :return: df, database in a date indexed dataframe
-    """
-    data_path = Path(db_dir, 'CSAS', data_file)
-    db = pd.read_csv(data_path)
-    if dtype == "24hr":
-        dates = hydro.compose_date(years=db.Year,days=db.DOY)
-    if dtype == "1hr":
-        dates = hydro.compose_date(years=db.Year, days=db.DOY,hours=db.Hour/100)
-
-    db.index = dates
-    db = db.tz_localize("UTC")
-
-    return (db)
 
 ### Begin User Input Data
 # Define working (data) directory
@@ -89,45 +77,6 @@ os.chdir(os.path.join(app_dir, 'database'))
 csas_dir = os.path.join(app_dir, 'database', 'CSAS')
 csas_files = os.listdir(csas_dir)
 res_dir = os.path.join(app_dir, 'resources')
-
-# Identify dataframes used in dashboard
-moddrfs_forc = pd.DataFrame()
-
-### Import Database Data ###
-# Parse files (select csv files, open, append date, append to database)
-for data_file in csas_files:
-    if "zip" in data_file:
-        continue
-    if ".db" in data_file:
-        continue
-    if ".py" in data_file:
-        continue
-    if "db" in data_file:
-        data_file_split = data_file.split("_")
-        source = data_file_split[0]
-        datatype = data_file_split[1]
-
-        if source == "SBSP":
-            if datatype == "1hr":
-                SBSP_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                SBSP_dv = csas_db_import(data_file, datatype)
-        if source == "SASP":
-            if datatype == "1hr":
-                SASP_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                SASP_dv = csas_db_import(data_file, datatype)
-        if source == "PTSP":
-            if datatype == "1hr":
-                PTSP_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                PTSP_dv = csas_db_import(data_file, datatype)
-        if source == "SBSG":
-            if datatype == "1hr":
-                SBSG_iv = csas_db_import(data_file, datatype)
-            if datatype == "24hr":
-                SBSG_dv = csas_db_import(data_file, datatype)
-        print("Importing {} from {}".format(datatype, source))
 
 #switch working dir back to main dir so dash app can function correctly
 os.chdir(app_dir)	  
@@ -149,19 +98,13 @@ basin_list = [
     {'label': 'LOS PINOS - NR BAYFIELD VALLECITO RES', 'value': 'VCRC2H_F'}
 ]
 # Set ranges of variables for use in dashboard
-# max_el = pd.read_sql('select max(elev_ft) from sd', db.engine).iloc[0][0]
-# min_el = pd.read_sql('select min(elev_ft) from sd', db.engine).iloc[0][0]
-# elevrange = [min_el, max_el]
-elevrange =[6079.0, 13924.0]
+elevrange =[5000, 15000]
 print(f'  Elevations from {elevrange[0]} to {elevrange[-1]}')
 elevdict = dict()
 for e in range(1, 20):
     elevdict[str(e * 1000)] = f"{e * 1000:,}'"
 
-# max_slope = pd.read_sql('select max(slope_d) from sd', db.engine).iloc[0][0]
-# min_slope = pd.read_sql('select min(slope_d) from sd', db.engine).iloc[0][0]
-# sloperange = [min_slope, max_slope]
-sloperange = [0.0, 79.0]
+sloperange = [0.0, 100]
 print(f'  Slopes from {sloperange[0]} to {sloperange[-1]}')
 slopedict = dict()
 for s in range(0, 11):
@@ -181,11 +124,11 @@ aspectdict = {-90: "W",
 
 # Define colors:
 # https://colorbrewer2.org/?type=qualitative&scheme=Set1&n=9
-color9 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999']
-# Import USGS gages and define list for dashboard drop down & add colors
-usgs_gages = pd.read_csv(os.path.join(res_dir, "usgs_gages.csv"))
+color8 = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#a65628','#f781bf','#999999']
+# Import FLOW gages and define list for dashboard drop down & add colors
+usgs_gages = pd.read_csv(os.path.join(this_dir,"FLOW", "usgs_gages.csv"))
 usgs_gages.index = usgs_gages.site_no
-colorg = color9
+colorg = color8
 while len(colorg)<len(usgs_gages):
     colorg = colorg*2
 usgs_gages["color"] = colorg[0:len(usgs_gages)]
@@ -197,44 +140,34 @@ for g in usgs_gages.index:
         usgs_gages.elev_ft[g]) + " ft | " + str(usgs_gages.area[g]) + " sq.mi.)", "value": "0" + str(g)})
 
 # Create list of SNOTEL sites & add colors
-snotel_gages = pd.read_csv(os.path.join(res_dir,"snotel_gages.csv"))
-snotel_gages.index = snotel_gages.triplet
-colors = color9
-while len(colors)<len(snotel_gages):
+snotel_sites = pd.read_csv(os.path.join(this_dir,"SNOTEL","snotel_sites.csv"))
+snotel_sites.index = snotel_sites.triplet
+colors = color8
+while len(colors)<len(snotel_sites):
     colors = colors*2
-snotel_gages["color"] = snotel_gages["prcp_color"] = colors[0:len(snotel_gages)]
+snotel_sites["color"] = snotel_sites["prcp_color"] = colors[0:len(snotel_sites)]
 
 # Add list for dropdown menu
 snotel_list = list()
-for s in snotel_gages.index:
-    snotel_list.append({"label": str(snotel_gages.site_no[s]) + " " + snotel_gages.name[s] + " (" + str(
-        round(snotel_gages.elev_ft[s], 0)) + " ft)", "value": s})
+for s in snotel_sites.index:
+    snotel_list.append({"label": str(snotel_sites.site_no[s]) + " " + snotel_sites.name[s] + " (" + str(
+        round(snotel_sites.elev_ft[s], 0)) + " ft)", "value": s})
 
 # Create list of CSAS sites & add colors
 csas_gages = pd.DataFrame()
 csas_gages["site"] = ["SASP","SBSP","PTSP","SBSG"]
 csas_gages["name"] = ["Swamp Angel","Senator Beck","Putney [Meteo]","Senator Beck Gage [Flow]"]
 csas_gages["elev_ft"] = [11060,12186,12323,11030]
-colorc = color9
+colorc = color8
 while len(colorc)<len(csas_gages):
     colorc = colorc*2
 csas_gages["color"] = csas_gages["prcp_color"] = colorc[0:len(csas_gages)]
 csas_gages.index = csas_gages["site"]
 
 csas_list = list()
-csas_db = list()
-
 for c in csas_gages.index:
     csas_list.append({"label": csas_gages.name[c] + " (" + str(
         round(csas_gages.elev_ft[c], 0)) + " ft)", "value": c})
-    if c == "SBSP":
-        csas_db.append({"value": c, "daily": SBSP_dv, "inst": SBSP_iv})
-    if c == "SASP":
-        csas_db.append({"value": c, "daily": SASP_dv, "inst": SASP_iv})
-    if c == "PTSP":
-        csas_db.append({"value": c, "daily": PTSP_dv, "inst": PTSP_iv})
-    if c == "SBSG":
-        csas_db.append({"value": c, "daily": SBSG_dv, "inst": SBSG_iv})
 
 # Import CSAS dust on snow data
 try:
@@ -254,17 +187,10 @@ else:
 
     dust_layers = pd.DataFrame(index=dust_ts.columns)
 
-    colord = color9
+    colord = color8
     while len(colord) < len(dust_layers):
         colord = colord * 2
-    dust_layers["color"] = colorc[0:len(dust_layers)]
-
-# Radiative forcing check
-if moddrfs_forc.empty:
-    forc_disable = True
-else:
-    forc_disable = False\
-
+    dust_layers["color"] = colord[0:len(dust_layers)]
 
 # set initial start and end date
 start_date = dt.datetime.now().date() - dt.timedelta(days=10)

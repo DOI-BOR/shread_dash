@@ -5,20 +5,19 @@ import numpy as np
 import plotly.graph_objects as go
 from hydroimport import import_snotel,import_csas_live
 
-from database import snotel_gages
-from database import  SBSP_iv, SBSP_dv, SASP_iv, SASP_dv, PTSP_dv, PTSP_iv
-from database import csas_gages, moddrfs_forc
+from database import snotel_sites
+from database import csas_gages
 
-from plot_lib.utils import screen, ba_stats
+from plot_lib.utils import ba_stats,screen_csas,screen_snotel
 from plot_lib.utils import ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
-def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date, 
-                 end_date, snotel_sel, csas_sel, plot_albedo, dtype):
+def get_met_plot(basin, elrange, aspects, slopes, start_date,
+                 end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+                 offline=True):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
-    :param plot_forc: boolean, plot radiative forcing dataset
     :param elrange: the range of elevations ([min,max])
     :param aspects: the range of aspects  ([min,max])
     :param slopes: the range of slopes ([min,max])
@@ -51,23 +50,6 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
     ylabel2 = "Inc. Precip (in)"
     print("NWS Precip not yet added")
 
-    ## Process Radiative Forcing Data
-    if plot_forc == True:
-        forc = moddrfs_forc
-
-        # Assign Labels
-        flabel = "Radiative Forcing"
-        ylabel = ylabel + " | Forcing [W/m^2]"
-
-        # Screen by basin location
-        forc_df = screen(forc, basin, aspects, elrange, slopes)
-        ba_forc = ba_stats(forc_df,dates)
-
-        # Calculate maximum value (for plotting axis)
-        forc_max = ba_forc.max().max()
-    else:
-        forc_max = np.nan
-
     ## Process SNOTEL data (if selected)
     if len(snotel_sel) > 0:
 
@@ -78,11 +60,14 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
 
         for s in snotel_sel:
             # Add name to name_df
-            name_df.loc[s, "name"] = str(snotel_gages.loc[s, "site_no"]) + " " + snotel_gages.loc[
-                s, "name"] + " (" + str(round(snotel_gages.loc[s, "elev_ft"], 0)) + " ft)"
+            name_df.loc[s, "name"] = str(snotel_sites.loc[s, "site_no"]) + " " + snotel_sites.loc[
+                s, "name"] + " (" + str(round(snotel_sites.loc[s, "elev_ft"], 0)) + " ft)"
 
             # Import SNOTEL data
-            snotel_in = import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
+            if offline:
+                snotel_in = screen_snotel(f"snotel_{s}", start_date, end_date)
+            else:
+                snotel_in = import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
 
             # Merge and add to temp and precip df
             snotel_t_in = snotel_t_df.merge(snotel_in["TAVG"], left_index=True, right_index=True, how="left")
@@ -102,79 +87,26 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
         print("No snotel selected.")
 
     ## Process CSAS data (if selected)
-    # TODO: handle current year csas met data
-    if start_date>"2020-12-30":
-        csas_sel=[]
 
-    if len(csas_sel) > 0:
-        for sp in ["SBSG"]:
-            if sp in csas_sel:
-                csas_sel.remove(sp)
+    csas_t_df = pd.DataFrame()
+    csas_a_df = pd.DataFrame()
 
-    if dtype=="dv":
-        cdates = dates
-        pvar = "Air_Avg_C"
-        var = "UpAir_Avg_C"
-
-    if dtype=="iv":
-        cdates = pd.date_range(start_date, end_date, freq="H", tz='UTC')
-        pvar = "Air_Max_C" #"Air_Min_C"
-        var = "UpAir_Max_C" #"UpAir_Min_C"
-
-
-    csas_t_df = pd.DataFrame(index=cdates)
-    if plot_albedo == True:
-        csas_a_df = pd.DataFrame(index=cdates)
-
-    # Handling for archived CSAS data
-    for c in csas_sel:
-        if c=="SASP":
-            if dtype=="dv":
-                csas_in = SASP_dv
-            if dtype=="iv":
-                csas_in = SASP_iv
-        if c=="SBSP":
-            if dtype=="dv":
-                csas_in = SBSP_dv
-            if dtype=="iv":
-                csas_in = SBSP_iv
-        if c=="PTSP":
-            if dtype=="dv":
-                csas_in = PTSP_dv
-            if dtype=="iv":
-                csas_in = PTSP_iv
-
-        csas_in = csas_in[(csas_in.index>=start_date) & (csas_in.index<=end_date)]
-        csas_in = csas_t_df.merge(csas_in, left_index=True, right_index=True, how="left")
-        if c=="PTSP":
-            csas_t_df.loc[:, c] = csas_in[pvar] * 9 / 5 + 32
+    for site in csas_sel:
+        if offline:
+            csas_df = screen_csas(site, start_date, end_date,dtype)
         else:
-            csas_t_df.loc[:, c] = csas_in[var] * 9 / 5 + 32
+            csas_df = import_csas_live(site, start_date, end_date,dtype)
 
-        if plot_albedo == True:
-            if c=="PTSP":
-                continue
-            csas_a_df.loc[:, c] = csas_in["PyDwn_Unfilt_W"]/csas_in["PyUp_Unfilt_W"]
-            csas_a_df.loc[csas_a_df[c] > 1, c] = 1
-            csas_a_df.loc[csas_a_df[c] < 0, c] = 0
+        if site != "SBSG":
+            csas_t_df[site] = csas_df["temp"]
+        if (plot_albedo) and (site != "SBSG") and (site != "PTSP"):
+            csas_a_df[site] = csas_df["albedo"]
 
-    if len(csas_sel) == 0:
-        csas_t_max = np.nan
-        csas_a_max = np.nan
-        print("No CSAS meteorology sites selected.")
-    else:
-        csas_t_max = csas_t_df.max().max()
-        csas_a_max = np.nan
-        if plot_albedo == True:
-            csas_a_df = (1-csas_a_df)*100 # Invert and convert to percent
-            csas_a_max = csas_a_df.max().max()
-            ylabel = ylabel + " | 100% - Albedo"
-            # print(csas_a_df)
-            # print(csas_in)
+    csas_max = np.nanmax([csas_t_df.max().max(),csas_a_df.max().max()])
 
     # Calculate plotting axes values
     ymin = np.nanmin([nws_t_min, snotel_t_min, 0])
-    ymax = np.nanmax([nws_t_max, snotel_t_max, forc_max, csas_t_max, csas_a_max, freeze]) * 1.25
+    ymax = np.nanmax([nws_t_max, snotel_t_max, csas_max, freeze]) * 1.25
     ymax2 = np.nanmax([nws_p_max, snotel_p_max, 0.2]) * 5
 
     # Create figure
@@ -212,16 +144,11 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
         yaxis="y2"
     ))
 
-
-    if plot_forc == True:
-        fig.add_trace(ba_mean_plot(ba_forc, flabel, color="green"))
-        fig.add_trace(ba_median_plot(ba_forc, flabel, color="green"))
-
     for s in snotel_sel:
         fig.add_trace(go.Bar(
             x=snotel_p_df.index,
             y=snotel_p_df.loc[:, s],
-            marker_color=snotel_gages.loc[s, "prcp_color"],
+            marker_color=snotel_sites.loc[s, "prcp_color"],
             text="Precip (in)",
             showlegend=False,
             name=name_df.loc[s, "name"] + " Daily Precip.",
@@ -232,7 +159,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
             x=snotel_t_df.index,
             y=snotel_t_df.loc[:, s],
             mode='lines',
-            line=dict(color=snotel_gages.loc[s, "color"]),
+            line=dict(color=snotel_sites.loc[s, "color"]),
             text="Degrees (F)",
             name=name_df.loc[s, "name"] + " Avg. Temp.",
             yaxis="y1"
@@ -251,7 +178,7 @@ def get_met_plot(basin, plot_forc, elrange, aspects, slopes, start_date,
         for c in csas_a_df.columns:
             fig.add_trace(go.Scatter(
                 x=csas_a_df.index,
-                y=csas_a_df[c],
+                y=(1-csas_a_df[c])*100,
                 text="100% - Albedo",
                 mode='lines',
                 line=dict(color=csas_gages.loc[c, "color"],dash="dash"),

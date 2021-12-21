@@ -11,72 +11,6 @@ from requests import get as r_get
 from requests.exceptions import ReadTimeout
 from io import StringIO
 
-def import_rfc(site, dtype, rfc = "cbrfc", verbose=False):
-    """Download NWS RFC flow data
-
-    Parameters
-    ---------
-        site: five digit site identifier
-        start_date: datetime
-        end_date: datetime
-        time_int: text
-        verbose: boolean
-            True : enable print during function run
-
-    Returns
-    -------
-        dataframe
-
-    """
-    if dtype == "dv":
-        ext = ".fflw24.csv"
-    if dtype == "iv":
-        ext = ".fflw1.csv"
-
-    site_url = "https://www."+rfc+".noaa.gov/product/hydrofcst/RVFCSV/"+site+ext
-
-    try:
-        csv_str = r_get(site_url, timeout=10).text
-    except TimeoutError:
-        raise Exception("Timeout; Data unavailable?")
-    if "not found on this server" in csv_str:
-        print("Site URL incorrect.")
-        return None
-
-    csv_io = StringIO(csv_str)
-    rfc_in = csv_io.readlines()
-    rfc_dat = pd.DataFrame()
-    data=False
-    i = 0
-    for line in range(0, len(rfc_in)):
-        text = str(rfc_in[line])
-        text = text.rstrip()
-        if text[:4] == "DATE":
-            columns = text.split(",")
-            data=True
-            if verbose == True:
-                print(columns)
-            continue
-        if data==True:
-            vals = text.split(",")
-            if verbose == True:
-                print(vals)
-            for col in range(0, len(columns)):
-                rfc_dat.loc[i, columns[col]] = vals[col]
-            i = i + 1
-
-    rfc_dat["DATE"] = pd.to_datetime(rfc_dat["DATE"])
-    rfc_dat["FLOW"] = pd.to_numeric(rfc_dat["FLOW"])
-
-    for i in rfc_dat.index:
-        rfc_dat.loc[i,"datetime"] = rfc_dat.loc[i,"DATE"]+dt.timedelta(hours=int(rfc_dat.loc[i,"TIME"].strip("Z")))
-
-    rfc_dat.index = rfc_dat.datetime
-    rfc_dat = rfc_dat.drop(columns=["DATE","TIME","datetime"])
-    rfc_dat = rfc_dat.tz_localize("UTC")
-
-    return(rfc_dat)
-
 def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC","TAVG"],dtype="dv",verbose=False):
     """Download NRCS SNOTEL data
 
@@ -128,7 +62,7 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
             if "not found on this server" in csv_str:
                 print("Site URL incorrect.")
                 return
-        
+
         csv_io = StringIO(csv_str)
         f = pd.read_json(csv_io, orient="index")
 
@@ -208,14 +142,9 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     if dtype == "iv":
         ext = "Hourly.php"
-        print("CSAS site unresponsive for sub-daily data...changing to daily.")
-        dtype = "dv"
     if dtype == "dv":
         ext = "Daily.php"
 
-    if pd.to_datetime(start_date).year < dt.datetime.now().year:
-        print("Program not designed to handle archive CSAS data; changing start date.")
-        start_date = "2021-01-01"
     site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
     print(site_url)
 
@@ -223,7 +152,7 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
     tries = 0
     while failed:
         try:
-            csv_str = r_get(site_url, timeout=10,verify=False).text
+            csv_str = r_get(site_url, timeout=None,verify=True).text
             failed = False
         except TimeoutError:
             raise Exception("Timeout; Data unavailable?")
@@ -231,7 +160,6 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
             print(tries)
             if tries > 10:
                 return
-
 
     csv_io = StringIO(csv_str)
     try:
@@ -256,66 +184,40 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     for col in csas_in.columns:
         if "Snow Depth" in col:
-            csas_df["SNWD"] = csas_in[col]*3.28084*12
+            csas_df["snwd"] = csas_in[col]*3.28084*12
         if ("Daily Average Air Temperature" in col) & ("(C" in col):
-            csas_df["TAVG"] = csas_in[col]*9/5+32
+            csas_df["temp"] = csas_in[col]*9/5+32
         else:
             if ("Air Temperature" in col) & ("(C" in col):
-                csas_df["TAVG"] = csas_in[col]*9/5+32
+                csas_df["temp"] = csas_in[col]*9/5+32
         if "Solar Radiation-Up" in col:
-            csas_df["RadUP"] = csas_in[col]
+            csas_df["radup"] = csas_in[col]
         if "Solar Radiation-Down" in col:
-            csas_df["RadDN"] = csas_in[col]
+            csas_df["raddn"] = csas_in[col]
         if ("Discharge" in col) or ("discharge" in col):
-            csas_df["FLOW"] = csas_in[col]
+            csas_df["flow"] = csas_in[col]
 
     # Add date index
     csas_df.index=dates
 
     # Calculated Albedo (if not included)
-    if "RadUP" in csas_df.columns:
-        csas_df["ALBEDO"] = csas_df["RadDN"] / csas_df["RadUP"]
-        csas_df.loc[csas_df["ALBEDO"]>1,'ALBEDO'] = 1
-        csas_df.loc[csas_df["ALBEDO"]<0,"ALBEDO"] = 0
+    if "radup" in csas_df.columns:
+        csas_df["albedo"] = csas_df["raddn"] / csas_df["radup"]
+        csas_df.loc[csas_df["albedo"]>1,'albedo'] = 1
+        csas_df.loc[csas_df["albedo"]<0,"albedo"] = 0
 
     # Clean snow depth
-    if "SNWD" in csas_df.columns:
-        #csas_df.loc[csas_df["SNWD"]==1,"SNWD"] = np.nan
-        csas_df.loc[csas_df["SNWD"]>109,'SNWD'] = np.nan # 109 is common error value
-        csas_df["SNWD"] = csas_df["SNWD"].interpolate(limit=3)
+    if "snwd" in csas_df.columns:
+        #csas_df.loc[csas_df["snwd"]==1,"snwd"] = np.nan
+        csas_df.loc[csas_df["snwd"]>109,'snwd'] = np.nan # 109 is common error value
+        csas_df["snwd"] = csas_df["snwd"].interpolate(limit=3)
 
     if dtype == "dv":
         csas_out = csas_df.loc[(csas_df.index >= start_date) & (csas_df.index <= end_date)]
         csas_out = csas_out.tz_localize("UTC")
     if dtype == "iv":
-
         csas_out = csas_df.loc[(csas_df.index >= dt.datetime.strptime(start_date,"%Y-%m-%d")) & (csas_df.index <= dt.datetime.strptime(end_date,"%Y-%m-%d"))]
         csas_out = csas_out.tz_localize("America/Denver")
 
     return(csas_out)
 
-
-# FOR TESTING
-# sx = time.perf_counter()
-# for s in snotel_gages.index:
-#     print(s)
-#     site_triplet = s#'380_CO_SNTL'
-#     vars = ["WTEQ","SNWD","PREC","TAVG"]
-#     start_date = "2021-01-01"
-#     end_date = "2021-01-31"
-#     dtype = "iv"
-#     x = import_snotel(site_triplet,start_date,end_date,vars,dtype,verbose=False)
-#     print(s)
-#
-# sx = time.perf_counter() - sx
-# print(sx)
-#
-#
-# site = "ARFNd5"
-# y = import_rfc(site,dtype)
-# #
-# start_date = "2021-04-01"
-# end_date = "2021-04-14"
-# dtype = "iv"
-# site = "PTSP"
-# z = import_csas_live(site,start_date,end_date,dtype)
