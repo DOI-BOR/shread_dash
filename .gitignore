@@ -109,9 +109,7 @@ dmypy.json
 
 # raw data
 database/*.csv
-database/CSAS/*.csv
 database/CSAS/*.db
-database/CSAS/csas_archive/*.csv
 database/CSAS/data/*
 database/SHREAD/*.tif
 database/SHREAD/*.db

@@ -170,10 +170,10 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
     csas_in = f[1]
     if csas_in.empty:
         print("Data not available")
-        return
+        return pd.DataFrame(columns=["snwd","temp","flow","albedo"])
     if csas_in is None:
         print("Data not available")
-        return
+        return pd.DataFrame(columns=["snwd","temp","flow","albedo"])
 
     if dtype == "dv":
         dates = compose_date(years=csas_in.Year,days=csas_in.Day)

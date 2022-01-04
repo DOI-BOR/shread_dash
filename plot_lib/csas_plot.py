@@ -34,6 +34,8 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo,
         else:
             csas_df = import_csas_live(site,start_date,end_date,dtype)
 
+        print(csas_df)
+
         if site == "SBSG":
             csas_f_df[site] = csas_df["flow"]
         elif site != "PTSP":
