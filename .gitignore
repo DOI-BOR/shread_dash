@@ -111,6 +111,7 @@ dmypy.json
 database/*.csv
 database/CSAS/*.db
 database/CSAS/data/*
+database/CSAS/csas_dust/*
 database/SHREAD/*.tif
 database/SHREAD/*.db
 database/SHREAD/data/*.tif

@@ -6,6 +6,7 @@ set /p all="Update ALL (Y/N)? "
 if %all%==Y (
 	start batch_scripts\shread_to_db.bat
 	start batch_scripts\csas_to_db.bat
+	start batch_scripts\update_dust.bat
 	start batch_scripts\rfc_to_db.bat
 	start batch_scripts\usgs_to_db.bat
 	start batch_scripts\snotel_to_db.bat
@@ -18,6 +19,9 @@ if %snodas%==Y start batch_scripts\shread_to_db.bat
 
 set /p csas="Update CSAS (Y/N)? "
 if %csas%==Y start batch_scripts\csas_to_db.bat
+
+set /p snotel="Update CSAS Dust (Y/N)? "
+if %snotel%==Y start batch_scripts\update_dust.bat
 
 set /p rfc="Update RFC (Y/N)? "
 if %rfc%==Y start batch_scripts\rfc_to_db.bat
