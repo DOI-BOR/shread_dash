@@ -39,12 +39,20 @@ def screen_spatial(db_type, s_date, e_date, basin, aspects=[0, 360],
     return (out_df)
 
 # Function to calculate mean, median, 5th and 95th states for screened basin
-def ba_stats(df, date_field="Date"):
+def ba_stats_std(df, date_field="Date"):
+    ba_df = df[[date_field, 'mean']].groupby(
+        by=date_field,
+        sort=True,
+    ).describe().droplevel(0, axis=1)
+    return ba_df
+
+def ba_stats_all(df, date_field="Date"):
     ba_df = df[[date_field, 'mean']].groupby(
         by=date_field,
         sort=True,
     ).describe(percentiles=[0.05, 0.5, 0.95]).droplevel(0, axis=1)
     return ba_df
+
 
 # Function to screen csas data by site and date
 def screen_csas(site,s_date,e_date,dtype):

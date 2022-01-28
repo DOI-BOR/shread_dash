@@ -7,11 +7,11 @@ from hydroimport import import_snotel,import_csas_live
 
 from database import snotel_sites
 from database import csas_gages
-from plot_lib.utils import screen_spatial,ba_stats,screen_csas,screen_snotel
+from plot_lib.utils import screen_spatial,ba_stats_std,screen_csas,screen_snotel
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
-def get_test_plot(ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
+def get_test_plot(plot_forecast,ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
     """
     :description: this function updates the snowplot
     :param ndvd_sel: the selected "sensors" (checklist)
@@ -33,7 +33,7 @@ def get_test_plot(ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
     # Add pop12:
 
     # Filter data
-    if basin == None:
+    if (basin == None) or (plot_forecast==False):
         print("No basins selected.")
         ndfd_plot = False
     elif len(ndfd_sel)>0:
@@ -47,7 +47,7 @@ def get_test_plot(ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
                 continue
             else:
                 # Calculate basin average values
-                ba_ndfd = ba_stats(df, "Date")
+                ba_ndfd = ba_stats_std(df, "Date")
 
                 if sensor=="mint":
                     mint = ba_ndfd

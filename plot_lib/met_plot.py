@@ -8,13 +8,13 @@ from hydroimport import import_snotel,import_csas_live
 from database import snotel_sites
 from database import csas_gages
 
-from plot_lib.utils import screen_spatial,ba_stats,screen_csas,screen_snotel
+from plot_lib.utils import screen_spatial,ba_stats_all,screen_csas,screen_snotel
 from plot_lib.utils import ba_mean_plot
 from plot_lib.utils import shade_forecast
 
 def get_met_plot(basin, elrange, aspects, slopes, start_date,
                  end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-                 ndfd_sel,offline=True):
+                 plot_forecast,ndfd_sel,offline=True):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
@@ -33,22 +33,6 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
    # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
     freeze = 32
-
-    ## Process NWS Basin Data (INCOMPLETE)
-    # NWS Temp
-    ylabel = "Avg. Temp (F)"
-    nws_t_df = pd.DataFrame(index=dates)
-    nws_t_df["mean"] = np.nan
-    nws_t_max = nws_t_df.max().max()
-    nws_t_min = nws_t_df.min().min()
-    print("NWS Temp not yet added")
-
-    # NWS Precip
-    nws_p_df = pd.DataFrame(index=dates)
-    nws_p_df["mean"] = np.nan
-    nws_p_max = nws_p_df.max().max()
-    ylabel2 = "Inc. Precip (in)"
-    print("NWS Precip not yet added")
 
     ## Process SNOTEL data (if selected)
     if len(snotel_sel) > 0:
@@ -104,18 +88,17 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
 
     csas_max = np.nanmax([csas_t_df.max().max(),csas_a_df.max().max()])
 
-    # Calculate plotting axes values
-    ymin = np.nanmin([nws_t_min, snotel_t_min, 0])
-    ymax = np.nanmax([nws_t_max, snotel_t_max, csas_max, freeze]) * 1.25
-    ymax2 = np.nanmax([nws_p_max, snotel_p_max, 0.2]) * 5
+
 
     # Process NDFD, if selected
     # Filter data
-    if basin == None:
+    if (basin == None) or (plot_forecast==False):
         print("No basins selected.")
         ndfd_plot = False
+        ndfd_max = ndfd_min = ndfd_snow = np.nan
     elif len(ndfd_sel)>0:
         ndfd_plot = True
+        ndfd_max = ndfd_min = ndfd_snow = np.nan
         if "snow" in str(ndfd_sel):
             ndfd_sel.append("pop12")
         mint = maxt = snow = pop12 = False
@@ -125,22 +108,31 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                 continue
             else:
                 # Calculate basin average values
-                ba_ndfd = ba_stats(df, "Date")
+                ba_ndfd = ba_stats_all(df, "Date")
 
                 if sensor=="mint":
                     mint = ba_ndfd
-                    if mint["mean"].max()>ymax:
-                        ymax = mint["mean"].max()*1.25
+                    ndfd_min = mint["mean"].min()
+
                 if sensor=="maxt":
                     maxt = ba_ndfd
-                    if maxt["mean"].max()>ymax:
-                        ymax = maxt["mean"].max()*1.25
+                    ndfd_max = maxt["mean"].max()
+
                 if sensor=="snow":
                     snow = ba_ndfd
+                    ndfd_snow = snow["mean"].max()
+
                 if sensor=="pop12":
                     pop12 = ba_ndfd
     else:
         ndfd_plot = False
+        ndfd_max = ndfd_min = ndfd_snow = np.nan
+
+
+    # Calculate plotting axes values
+    ymin = np.nanmin([ndfd_min,snotel_t_min, 0])
+    ymax = np.nanmax([ndfd_max,snotel_t_max, csas_max, freeze]) * 1.25
+    ymax2 = np.nanmax([ndfd_snow,snotel_p_max, 1]) * 2
 
     # Create figure
     print("Updating meteorology plot...")
@@ -155,26 +147,6 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
         line=dict(color='grey', dash="dash"),
         name=str(freeze) + "F",
         yaxis="y1"
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=nws_t_df.index,
-        y=nws_t_df["mean"],
-        text="Degrees (F)",
-        mode='lines',
-        line=dict(color="black"),
-        name="NWS Mean Temp for selection",
-        yaxis="y1"
-    ))
-
-    fig.add_trace(go.Bar(
-        x=nws_p_df.index,
-        y=nws_p_df["mean"],
-        text="Precip (in)",
-        marker_color="black",
-        showlegend=False,
-        name="NWS Mean Precip for selection",
-        yaxis="y2"
     ))
 
     for s in snotel_sel:
@@ -225,6 +197,17 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
         if maxt is not False:
             fig.add_trace(ba_mean_plot(maxt, f"Max Temp", "red"))
 
+        if snow is not False:
+            fig.add_trace(go.Bar(
+                x=snow.index,
+                y=snow["mean"],
+                text=pop12['mean'],
+                marker_color="black",
+                showlegend=False,
+                name="NWS Mean Snow Forecast for selection",
+                yaxis="y2"
+            ))
+
     fig.add_trace(shade_forecast(ymax))
 
     fig.update_layout(
@@ -240,14 +223,14 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
             mirror=True
         ),
         yaxis=dict(
-            title=ylabel,
+            title="Temperature (deg F)",
             range=[ymin, ymax],
             showline=True,
             linecolor="black",
             mirror=True
         ),
         yaxis2=dict(
-            title=ylabel2,
+            title="Precipitation (in)",
             side="right",
             overlaying='y',
             range=[ymax2, 0]

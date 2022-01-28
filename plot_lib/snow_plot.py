@@ -7,7 +7,7 @@ from hydroimport import import_snotel,import_csas_live
 
 from database import snotel_sites
 from database import csas_gages
-from plot_lib.utils import screen_spatial,ba_stats,screen_csas,screen_snotel
+from plot_lib.utils import screen_spatial,ba_stats_all,screen_csas,screen_snotel
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
@@ -85,7 +85,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             basin_stats_str = 'No valid SHREAD data for given parameters'
         else:
             # Calculate basin average values
-            ba_snodas = ba_stats(snodas_df)
+            ba_snodas = ba_stats_all(snodas_df)
             snodas_max = ba_snodas['95%'].max()
             basin_stats_str = get_basin_stats(snodas_df,stype)
             

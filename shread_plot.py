@@ -202,6 +202,7 @@ def get_layout():
                                 style=dict(marginLeft=10),
                                 html_for="plot_forecast",
                             ),
+                            html.Div(html.P()),
                             dbc.Label('Select NDFD variables:'),
                             dcc.Dropdown(
                                 id='ndfd_sel',
@@ -510,17 +511,18 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         Input('csas_sel','value'),
         Input('plot_albedo_met','checked'),
         Input('dtype', 'value'),
+        Input('plot_forecast', 'checked'),
         Input('ndfd_sel','value'),
         Input('offline','checked'),
     ])
 def update_met_plot(basin, elrange, aspects, slopes, start_date,
                     end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-                    ndfd_sel,offline):
+                    plot_forecast,ndfd_sel,offline):
 
     fig = get_met_plot(
         basin, elrange, aspects, slopes, start_date,
         end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-        ndfd_sel,offline
+        plot_forecast,ndfd_sel,offline
     )
     return fig
 
@@ -566,6 +568,7 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,of
 @app.callback(
     Output('test_plot', 'figure'),
     [
+        Input('plot_forecast', 'checked'),
         Input('ndfd_sel','value'),
         Input('basin', 'value'),
         Input('elevations', 'value'),
@@ -574,9 +577,9 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,of
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
     ])
-def update_test_plot(ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
+def update_test_plot(plot_forecast,ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
 
-    fig = get_test_plot(
+    fig = get_test_plot(plot_forecast,
         ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date
     )
     return fig
