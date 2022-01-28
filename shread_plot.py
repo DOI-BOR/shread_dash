@@ -28,7 +28,7 @@ from plot_lib.snow_plot import get_snow_plot
 from plot_lib.met_plot import get_met_plot
 from plot_lib.flow_plot import get_flow_plot
 from plot_lib.csas_plot import get_csas_plot
-from plot_lib.test_ndfd_plot import get_test_plot
+#from plot_lib.test_ndfd_plot import get_test_plot
 
 app = database.app
 
@@ -361,18 +361,18 @@ def get_layout():
                     ))
                 ]
             ),
-            dbc.Row(
-                [
-                    dbc.Col(dbc.FormGroup(
-                        [
-                            dcc.Graph(
-                                id='test_plot',
-                                config=get_plot_config("dashboard_test.jpg")
-                            ),
-                        ]
-                    ))
-                ]
-            ),
+            # dbc.Row(
+            #     [
+            #         dbc.Col(dbc.FormGroup(
+            #             [
+            #                 dcc.Graph(
+            #                     id='test_plot',
+            #                     config=get_plot_config("dashboard_test.jpg")
+            #                 ),
+            #             ]
+            #         ))
+            #     ]
+            # ),
         ]
     )
 
@@ -565,24 +565,24 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,of
 
     return fig
 
-@app.callback(
-    Output('test_plot', 'figure'),
-    [
-        Input('plot_forecast', 'checked'),
-        Input('ndfd_sel','value'),
-        Input('basin', 'value'),
-        Input('elevations', 'value'),
-        Input('aspects', 'value'),
-        Input('slopes', 'value'),
-        Input('date_selection', 'start_date'),
-        Input('date_selection', 'end_date'),
-    ])
-def update_test_plot(plot_forecast,ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
-
-    fig = get_test_plot(plot_forecast,
-        ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date
-    )
-    return fig
+# @app.callback(
+#     Output('test_plot', 'figure'),
+#     [
+#         Input('plot_forecast', 'checked'),
+#         Input('ndfd_sel','value'),
+#         Input('basin', 'value'),
+#         Input('elevations', 'value'),
+#         Input('aspects', 'value'),
+#         Input('slopes', 'value'),
+#         Input('date_selection', 'start_date'),
+#         Input('date_selection', 'end_date'),
+#     ])
+# def update_test_plot(plot_forecast,ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
+#
+#     fig = get_test_plot(plot_forecast,
+#         ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date
+#     )
+#     return fig
 
 ### LAUNCH
 if __name__ == '__main__':
