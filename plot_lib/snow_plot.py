@@ -7,7 +7,7 @@ from hydroimport import import_snotel,import_csas_live
 
 from database import snotel_sites
 from database import csas_gages
-from plot_lib.utils import screen_snodas,ba_snodas_stats,screen_csas,screen_snotel
+from plot_lib.utils import screen_spatial,ba_stats,screen_csas,screen_snotel
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
@@ -62,7 +62,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         ylabel = "Mean SWE (in)"
         dlabel = "SWE"
         slabel = "WTEQ"
-    if stype == "snowdepth":
+    if stype == "sd":
         ylabel = "Mean Snow Depth (in)"
         dlabel = "snow depth"
         slabel = "SNWD"
@@ -76,7 +76,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         basin_stats_str = ''
     else:
         snodas_plot = True
-        snodas_df = screen_snodas(
+        snodas_df = screen_spatial(
             stype, start_date, end_date, basin, aspects, elrange, slopes
         )
         if snodas_df.empty:
@@ -85,7 +85,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             basin_stats_str = 'No valid SHREAD data for given parameters'
         else:
             # Calculate basin average values
-            ba_snodas = ba_snodas_stats(snodas_df, dates)
+            ba_snodas = ba_stats(snodas_df)
             snodas_max = ba_snodas['95%'].max()
             basin_stats_str = get_basin_stats(snodas_df,stype)
             

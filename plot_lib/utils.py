@@ -9,18 +9,14 @@ import plotly.graph_objects as go
 from database import db
 
 # Function to screen data by basin, aspect, elevation and slopes (using points)
-def screen_snodas(db_type, s_date, e_date, basin, aspects=[0, 360], 
-                  elrange=[0, 20000], slopes=[0, 100]):
+def screen_spatial(db_type, s_date, e_date, basin, aspects=[0, 360],
+                  elrange=[0, 20000], slopes=[0, 100],date_col="Date"):
 
-    bind_dict = {
-        'swe': 'swe',
-        'snowdepth': 'sd'
-    }
-    bind = bind_dict[db_type]
+    bind = db_type
     qry = (
         f"select * from {basin} where "
-        f"`Date` >= '{s_date}' "
-        f"and `Date` <= '{e_date}' "
+        f"`{date_col}` >= '{s_date}' "
+        f"and `{date_col}` <= '{e_date}' "
         f"and slope_d >= {slopes[0]} "
         f"and slope_d <= {slopes[1]} "
         f"and elev_ft >= {elrange[0]} "
@@ -43,9 +39,9 @@ def screen_snodas(db_type, s_date, e_date, basin, aspects=[0, 360],
     return (out_df)
 
 # Function to calculate mean, median, 5th and 95th states for screened basin
-def ba_stats(df, dates):
-    ba_df = df[['Date', 'mean']].groupby(
-        by='Date',
+def ba_stats(df, date_field="Date"):
+    ba_df = df[[date_field, 'mean']].groupby(
+        by=date_field,
         sort=True,
     ).describe(percentiles=[0.05, 0.5, 0.95]).droplevel(0, axis=1)
     return ba_df
@@ -121,17 +117,6 @@ def screen_rfc(site,fcst_dt,dtype):
     out_df.index = pd.to_datetime(out_df['date'], utc=True)
     out_df.index.name = None
     return (out_df,fcst_dt)
-
-
-# Function to calculate mean, median, 5th and 95th states for screened basin
-def ba_snodas_stats(df, dates):
-    
-    ba_df = df[['Date', 'mean']].groupby(
-        by='Date',
-        sort=True,
-    ).describe(percentiles=[0.05, 0.5, 0.95]).droplevel(0, axis=1)
-
-    return ba_df
 
 # Functions to plot max, min, mean and median ba timeseries
 def ba_max_plot(ba_df,dlabel,color="grey"):

@@ -113,7 +113,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
         for g in usgs_sel:
             if pd.isna(usgs_gages.loc[int(g),"rfc"])==False:
                 rfc = usgs_gages.loc[int(g),"rfc"]
-                print(rfc)
+                #print(rfc)
 
                 if offline:
                     rfc_in,fcst_dt = screen_rfc(rfc,fcst_dt,dtype)

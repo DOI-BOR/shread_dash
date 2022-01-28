@@ -4,7 +4,7 @@ TITLE "Preparing to update databases"
 set /p all="Update ALL (Y/N)? "
 
 if %all%==Y (
-	start batch_scripts\shread_to_db.bat
+	start batch_scripts\shread_snow_to_db.bat
 	start batch_scripts\csas_to_db.bat
 	start batch_scripts\update_dust.bat
 	start batch_scripts\rfc_to_db.bat

@@ -34,12 +34,20 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo,
         else:
             csas_df = import_csas_live(site,start_date,end_date,dtype)
 
-        print(csas_df)
+        #print(csas_df)
 
         if site == "SBSG":
             csas_f_df[site] = csas_df["flow"]
+            if ylabel=="":
+                ylabel = "Flow (ft^3/s)"
+            else:
+                ylabel = f"{ylabel} | Flow (ft^3/s)"
         elif site != "PTSP":
             csas_s_df[site] = csas_df["snwd"]
+            if ylabel=="":
+                ylabel = "Depth (in)"
+            else:
+                ylabel = f"{ylabel} | Depth (in)"
         if (plot_albedo) and (site != "SBSG"):
             csas_a_df[site] = csas_df["albedo"]
 

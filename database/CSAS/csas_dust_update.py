@@ -25,6 +25,7 @@ print(csas_dust.tail(1))
 
 # Get user input
 check = input("Continue to add data (Y/N)? ")
+dust_update = csas_dust.copy()
 
 while check=="Y":
     # copy csas dust data
@@ -49,20 +50,23 @@ while check=="Y":
 
     check = input("Add additional data (Y/N)? ")
 
-print("Here are the changes:")
-diff = len(dust_update)-len(csas_dust)
-compare = dust_update.tail(diff)
-print(compare)
-export = input("Overwrite csas_dust.csv with updated data (Y/N)? ")
-
-if export=="Y":
-    # save a copy
-    if os.path.isdir(data_dir) is False:
-        os.mkdir(data_dir)
-    last = csas_dust.tail(1).Date.item()
-    csas_dust.to_csv(Path(data_dir,f'csas_dust_{last}.csv'))
-
-    # Overwrite
-    dust_update.to_csv(csas_dust_file,index=False)
+if len(dust_update) == len(csas_dust):
+    print("No data will be written. Close script.")
 else:
-    print("No data will be written. Please rerun script.")
+    print("Here are the changes:")
+    diff = len(dust_update)-len(csas_dust)
+    compare = dust_update.tail(diff)
+    print(compare)
+    export = input("Overwrite csas_dust.csv with updated data (Y/N)? ")
+
+    if export=="Y":
+        # save a copy
+        if os.path.isdir(data_dir) is False:
+            os.mkdir(data_dir)
+        last = csas_dust.tail(1).Date.item()
+        csas_dust.to_csv(Path(data_dir,f'csas_dust_{last}.csv'))
+
+        # Overwrite
+        dust_update.to_csv(csas_dust_file,index=False)
+    else:
+        print("No data will be written. Please rerun script.")

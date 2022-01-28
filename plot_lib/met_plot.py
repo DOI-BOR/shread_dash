@@ -8,13 +8,13 @@ from hydroimport import import_snotel,import_csas_live
 from database import snotel_sites
 from database import csas_gages
 
-from plot_lib.utils import ba_stats,screen_csas,screen_snotel
-from plot_lib.utils import ba_mean_plot, ba_median_plot
+from plot_lib.utils import screen_spatial,ba_stats,screen_csas,screen_snotel
+from plot_lib.utils import ba_mean_plot
 from plot_lib.utils import shade_forecast
 
 def get_met_plot(basin, elrange, aspects, slopes, start_date,
                  end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-                 offline=True):
+                 ndfd_sel,offline=True):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
@@ -109,6 +109,39 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
     ymax = np.nanmax([nws_t_max, snotel_t_max, csas_max, freeze]) * 1.25
     ymax2 = np.nanmax([nws_p_max, snotel_p_max, 0.2]) * 5
 
+    # Process NDFD, if selected
+    # Filter data
+    if basin == None:
+        print("No basins selected.")
+        ndfd_plot = False
+    elif len(ndfd_sel)>0:
+        ndfd_plot = True
+        if "snow" in str(ndfd_sel):
+            ndfd_sel.append("pop12")
+        mint = maxt = snow = pop12 = False
+        for sensor in ndfd_sel:
+            df = screen_spatial(sensor,start_date,end_date,basin,aspects,elrange,slopes,"Date")
+            if df.empty:
+                continue
+            else:
+                # Calculate basin average values
+                ba_ndfd = ba_stats(df, "Date")
+
+                if sensor=="mint":
+                    mint = ba_ndfd
+                    if mint["mean"].max()>ymax:
+                        ymax = mint["mean"].max()*1.25
+                if sensor=="maxt":
+                    maxt = ba_ndfd
+                    if maxt["mean"].max()>ymax:
+                        ymax = maxt["mean"].max()*1.25
+                if sensor=="snow":
+                    snow = ba_ndfd
+                if sensor=="pop12":
+                    pop12 = ba_ndfd
+    else:
+        ndfd_plot = False
+
     # Create figure
     print("Updating meteorology plot...")
     fig = go.Figure()
@@ -185,6 +218,12 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                 name=c+" 100% - Albedo",
                 yaxis="y1"))
 
+    if ndfd_plot:
+        if mint is not False:
+            fig.add_trace(ba_mean_plot(mint, f"Min Temp", "blue"))
+
+        if maxt is not False:
+            fig.add_trace(ba_mean_plot(maxt, f"Max Temp", "red"))
 
     fig.add_trace(shade_forecast(ymax))
 

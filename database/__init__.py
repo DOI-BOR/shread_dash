@@ -40,6 +40,14 @@ def create_app():
     usgs_iv_db_path = Path(db_path, 'FLOW', 'usgs_iv.db')
     rfc_dv_db_path = Path(db_path, 'FLOW', 'rfc_dv.db')
     rfc_iv_db_path = Path(db_path, 'FLOW', 'rfc_iv.db')
+    ndfd_mint_db_path = Path(db_path, 'SHREAD', 'mint.db')
+    ndfd_maxt_db_path = Path(db_path, 'SHREAD', 'maxt.db')
+    ndfd_rhm_db_path = Path(db_path, 'SHREAD', 'rhm.db')
+    ndfd_pop12_db_path = Path(db_path, 'SHREAD', 'pop12.db')
+    ndfd_qpf_db_path = Path(db_path, 'SHREAD', 'qpf.db')
+    ndfd_snow_db_path = Path(db_path, 'SHREAD', 'snow.db')
+    ndfd_sky_db_path = Path(db_path, 'SHREAD', 'sky.db')
+
     snodas_swe_db_con_str = f'sqlite:///{snodas_swe_db_path.as_posix()}'
     snodas_sd_db_con_str = f'sqlite:///{snodas_sd_db_path.as_posix()}'
     csas_iv_db_con_str = f'sqlite:///{csas_iv_db_path.as_posix()}'
@@ -49,6 +57,13 @@ def create_app():
     usgs_iv_db_con_str = f'sqlite:///{usgs_iv_db_path.as_posix()}'
     rfc_dv_db_con_str = f'sqlite:///{rfc_dv_db_path.as_posix()}'
     rfc_iv_db_con_str = f'sqlite:///{rfc_iv_db_path.as_posix()}'
+    ndfd_mint_db_con_str = f'sqlite:///{ndfd_mint_db_path}'
+    ndfd_maxt_db_con_str = f'sqlite:///{ndfd_maxt_db_path}'
+    ndfd_rhm_db_con_str = f'sqlite:///{ndfd_rhm_db_path}'
+    ndfd_pop12_db_con_str = f'sqlite:///{ndfd_pop12_db_path}'
+    ndfd_qpf_db_con_str = f'sqlite:///{ndfd_qpf_db_path}'
+    ndfd_snow_db_con_str = f'sqlite:///{ndfd_snow_db_path}'
+    ndfd_sky_db_con_str = f'sqlite:///{ndfd_sky_db_path}'
 
     app.server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.server.config['SQLALCHEMY_BINDS'] = {
@@ -60,7 +75,14 @@ def create_app():
         'usgs_dv':usgs_dv_db_con_str,
         'usgs_iv':usgs_iv_db_con_str,
         'rfc_dv':rfc_dv_db_con_str,
-        'rfc_iv':rfc_iv_db_con_str
+        'rfc_iv':rfc_iv_db_con_str,
+        "mint": ndfd_mint_db_con_str,
+        "maxt": ndfd_maxt_db_con_str,
+        "rhm": ndfd_rhm_db_con_str,
+        "pop12": ndfd_pop12_db_con_str,
+        "qpf": ndfd_qpf_db_con_str,
+        "snow": ndfd_snow_db_con_str,
+        "sky": ndfd_sky_db_con_str,
     }
 
     return app
@@ -168,6 +190,16 @@ csas_list = list()
 for c in csas_gages.index:
     csas_list.append({"label": csas_gages.name[c] + " (" + str(
         round(csas_gages.elev_ft[c], 0)) + " ft)", "value": c})
+
+# Generate NDFD list
+ndfd_list = [{"label":"Min. Temp (F)","value":"mint"},
+             {"label":"Max. Temp (F)","value":"maxt"},
+             #{"label":"Precip Forecast","value":"qpf"},
+             {"label":"Snow Forecast","value":"snow"},
+             #{"label":"Precip Prob.","value":"pop12"},
+             #{"label":"Relative Humidity","value":"rhm"},
+             #{"label":"Sky Coverage","value":"sky"}
+             ]
 
 # Import CSAS dust on snow data
 try:
