@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 27, 2022
+
+SHREAD Dash Test Plot Space
+
+Script for running a test plot in the dashboard (shread_dash.py)
+
+@author: tclarkin (2022)
+
+"""
+
 
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_snotel,import_csas_live
-
-from database import snotel_sites
-from database import csas_gages
-from plot_lib.utils import screen_spatial,ba_stats_std,screen_csas,screen_snotel
-from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
+from plot_lib.utils import screen_spatial,ba_stats_std
+from plot_lib.utils import ba_mean_plot
 from plot_lib.utils import shade_forecast
 
 def get_test_plot(plot_forecast,ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):

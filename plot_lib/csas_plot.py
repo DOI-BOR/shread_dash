@@ -1,5 +1,13 @@
-# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 27, 2022
 
+SHREAD Dash CSAS Plot
+
+Script for running the CSAS plot in the dashboard (shread_dash.py)
+
+@author: buriona, tclarkin (2020-2022)
+
+"""
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go

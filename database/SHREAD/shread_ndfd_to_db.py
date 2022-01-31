@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr  2 09:20:37 2021
+Created on Jan  5 09:20:37 2022
+
+Compiles NDFD data into SQLite DB
 
 @author: buriona,tclarkin
 """
@@ -15,7 +17,7 @@ from zipfile import ZipFile
 
 # Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/SHREAD')
+#this_dir = Path('C:/Programs/shread_dash/database/SHREAD')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'Date_Valid'

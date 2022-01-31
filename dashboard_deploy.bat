@@ -7,7 +7,7 @@ call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
 set PYTHONPATH=%THIS_DIR%
-python shread_plot.py
+python shread_dash.py
 pause
 
 :GET_THIS_DIR

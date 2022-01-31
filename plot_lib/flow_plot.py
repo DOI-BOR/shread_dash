@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 27, 2022
+
+SHREAD Dash Flow Plot
+
+Script for running the flow plot in the dashboard (shread_dash.py)
+
+@author: buriona, tclarkin (2020-2022)
+
+"""
 
 import datetime as dt
 import pytz

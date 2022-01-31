@@ -12,7 +12,7 @@ import datetime as dt
 
 # Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/CSAS')
+#this_dir = Path('C:/Programs/shread_dash/database/CSAS')
 data_dir = Path(this_dir,"csas_dust")
 
 # Open csas dust file

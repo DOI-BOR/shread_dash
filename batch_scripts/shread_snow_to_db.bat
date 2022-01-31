@@ -12,13 +12,13 @@ set shread_dir=C:\Programs\
 cd %shread_dir%shread_wd\
 TITLE Running shread...
 @ECHO ON
-call python %shread_dir%shread/shread.py -i shread_config_example.ini -s %sdate% -e %edate% -t D -p snodas
+call python %shread_dir%shread/shread.py -i shread_config_shread_dash.ini -s %sdate% -e %edate% -t D -p snodas
 @ECHO OFF
 
 TITLE Updating DB with new data...
 set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
-cd %shread_dir%shread_plot\database\SHREAD\
+cd %shread_dir%shread_dash\database\SHREAD\
 @ECHO ON
 python shread_snow_to_db.py
 @ECHO OFF

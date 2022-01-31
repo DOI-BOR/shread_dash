@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 27, 2022
+
+SHREAD Dash Snow Plot
+
+Script for running the snow plot in the dashboard (shread_dash.py)
+
+@author: buriona, tclarkin (2020-2022)
+
+"""
 
 import pandas as pd
 import numpy as np

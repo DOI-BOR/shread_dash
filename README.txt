@@ -1,5 +1,159 @@
-To Update:
-- Open 
-- Fetch Origin
-Pull
+Last Updated: 2022-01-31
+
+README for:
+Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py)
+
+This repository contains a series of batch scripts and python codes to run the Snow-Hydrology Repo for Evaluation, 
+Analysis, and Decision-making Dashboard (or "SHREAD Dash"). SHREAD plot has two main components: the database and
+the dashboard. The database relies on a series of retrieval scripts (/database/) that retrieve hydrometeorological
+data from online and store the data in local databases. Part of the retrieval process is dependent on the SHREAD
+repository (https://github.com/tclarkin/shread), The databases are built in SQLite. The dashboard is built with
+Dash by Plotly and is configured to run locally.
+
+This repository is licensed as Creative Commons Zero (CC0). All contributions will be licensed as CC0.
+
+Directions for initial setup and subsequent updates are listed below.
+
+
+>> INTIAL SETUP <<
+Follow these steps if this is your first installation of the dashboard.
+
+1. INSTALL PROGRAMS:
+	
+	A. Python
+		If you don't already have Python, install miniforge: https://github.com/conda-forge/miniforge#download
+		You will want to install this LOCALLY. The path should be something like:
+			C:\Users\{your user name}\AppData\Local\miniforge3
+		
+	B. GitHub
+		If you don't already have an account on GitHub, join here: https://www.github.com/join
+		Next, install Git Desktop: https://desktop.github.com/
+		and/or Git Bash: https://git-scm.com/download/win 
+
+2. CREATE DIRECTORIES
+	
+	A. Create directories
+		Create a folder "Programs" on your C: drive. Should have path: C:/Programs
+		Create a folder "shread" in Programs. Should have path: C:/Programs/shread
+		Create a folder "shread_dash" in Programs. Should have path: C:/Programs/shread_dash
+		Create a folder "shread_wd" in Programs. Should have path: C:/Programs/shread_wd
+		
+3. CLONE REPOSITORIES
+
+	The repositories have the following URLs and Local Path locations:
+
+	shread_dash repository:
+		URL: https://github.com/tclarkin/shread_dash
+		Local Path: C:/Programs/shread_dash
+		
+	shread repository:
+		URL: https://github.com/tclarkin/shread
+		Local Path: C:/Programs/shread
+
+	Do one of the following for both repositories:
+
+	A. Using Git Desktop
+		Click "File" > "Clone repository" from top bar
+		Click the "URL" tab
+		Enter the URL and Local Path from above
+		Click "Clone"
+
+	B. Using Git Bash
+		Navigate to the Local Path above:
+			> cd {Local Path}
+		Clone repository using the URL above:
+			> git clone {URL}
+
+4. BUILD ENVIRONMENTS AND CONFIGURE
+	
+	A. Build Python Environments
+		Open miniconda prompt
+		Navigate to shread directory:
+			> cd C:/Programs/shread
+		Build shread environment:
+			> conda env create -f environment.yml
+		Navigate to shread_dash directory:
+			> cd C:/Programs/shread_dash
+		Build shread_env environment:
+			> conda env create -f environment.yml
+		Close miniconda prompt
+
+	B. Configure shread working directory
+		In C:/Programs/shread_wd, add the following folders:
+			data/archive
+			data/database
+			data/working
+			resources/gis
+		
+		To C:Programs/shread_wd, copy shread_config_shread_dash.ini from C:/Programs/shread/config
+		To C:/Programs/resources/gis, copy the two .geojson files found in C:/Programs/shread_dash/resources
+		
+	C. Configure bat files
+		Open the following files with a text editor and make sure the path to miniconda is correct.
+			C:/Programs/shread_dash/dasboard_deploy.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/csas_to_db.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/rfc_to_db.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/usgs_to_db.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/snotel_to_db.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/update_dust.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/shread_snow_to_db.bat (line 3 and 5)
+			C:/Programs/shread_dash/batch_scripts/shread_ndfd_to_db.bat (line 6 and 8)
+			
+		This can easily be done using Notepad++. Open all files. Hold Ctrl+H.
+			In Find What enter: C:\Users\tclarkin\AppData\Local\miniforge3
+			In Replace with enter: C:\Users\{your username}\AppData\Local\miniforge3
+			Click Replace All in All Opened Documents
+			Save All.
+
+5. RUN
+
+	A. Update databases
+		Double click on C:/Programs/shread_dash/updated_databases.bat
+		Follow prompts
+
+	B. Launch dashboard
+		Double click on C:/Programs/shread_dash/launch_dashboard.bat
+		Follow prompts (open http://127.0.0.1:5000/ in browser)
+
+
+>> INTERMEDIATE UPDATES <<
+If you have already installed and configured everything for shread plot, but need to pull updates, do the following:
+
+6. PULL UPDATES FROM GITHUB
+
+	The repositories are saved in the following Local Path locations:
+
+	shread_dash repository:
+		Local Path: C:/Programs/shread_dash
+		
+	shread repository:
+		Local Path: C:/Programs/shread
+
+	Do one of the following to update the repositories:
+
+	A. Using Git Desktop
+		Select the repositories (top left)
+		Select "Repository" > "Pull Origin" from top bar
+
+	B. Using Git Bash
+		Navigate to the Local Path
+			> cd {Local Path}
+		Pull the updates: 
+			> git pull
+	
+7. CHECK BAT FILES & ENVIRONMENTS
+
+	A. Check batch scripts
+		Repeat Step 4C
+
+	If the updates pulled from GitHub resulted in any changes to the environment.yml files, do the following:
+
+	B. Update Environments (Optional):
+		Open miniconda prompt
+		Navigate to directory for the repository with changed environment.yml file:
+			> cd {Local Directory}
+		Update shread environment:
+			> conda env update -f environment.yml
+
+
 

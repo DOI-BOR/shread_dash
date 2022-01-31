@@ -2,25 +2,36 @@
 """
 Created on Sun Mar 21 11:55:27 2021
 
-@author: buriona, tclarkin
+Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py) Database Initialization
+
+This is part of dashboard loading database and other data into memory. The data for the database relies on a series of
+retrieval scripts (/database/SUBS) that retrieve hydrometeorological data from online and store the data in local
+databases. Part of the retrieval process is dependent on the SHREAD repository (https://github.com/tclarkin/shread).
+The databases are built in SQLite.
+
+@author: tclarkin, buriona (2020-2022)
+
 """
 
 import os
 import datetime as dt
 from pathlib import Path
 import pandas as pd
-import hydroimport as hydro
 from flask_sqlalchemy import SQLAlchemy
 import dash_bootstrap_components as dbc
 import dash
 
+### Launch SQLite DB Server ###
+# Define directories and app
 this_dir = os.path.dirname(os.path.realpath(__file__))
+#this_dir = Path('C:/Programs/shread_dash/database')
 app_dir = os.path.dirname(this_dir)
 
-#this_dir = Path('C:/Programs/SNODAS_plot/database')
-app_dir = os.path.dirname(this_dir)
-
+# define functions
 def create_app():
+    """
+    This function launches the SALAlchemy db server
+    """
     assets_path = Path(app_dir, 'assets')
     app = dash.Dash(
         __name__,
@@ -87,11 +98,12 @@ def create_app():
 
     return app
 
+# Launch server
 app = create_app()
 db = SQLAlchemy(app.server)
 db.reflect()
 
-### Begin User Input Data
+### Load in other Data ###
 # Define working (data) directory
 os.chdir(os.path.join(app_dir, 'database'))
 

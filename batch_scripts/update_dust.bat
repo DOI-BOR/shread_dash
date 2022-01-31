@@ -6,7 +6,7 @@ set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
-python C:\Programs\shread_plot\database\CSAS\csas_dust_update.py
+python C:\Programs\shread_dash\database\CSAS\csas_dust_update.py
 pause
 
 :GET_THIS_DIR

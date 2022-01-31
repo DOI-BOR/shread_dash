@@ -7,7 +7,7 @@ call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
 set PYTHONPATH=%THIS_DIR%
-call waitress-serve --port 8081 "shread_plot:app.server"
+call waitress-serve --port 8081 "shread_dash:app.server"
 pause
 
 :GET_THIS_DIR

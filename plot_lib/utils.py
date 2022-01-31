@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Fri Apr  2 09:20:37 2021
+
+Additional utilities used in multiple scripts for shread_dash.py
+
+@author: buriona,tclarkin
+"""
 
 import time
 import datetime as dt

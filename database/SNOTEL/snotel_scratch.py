@@ -13,7 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 import dash
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
-this_dir = Path('C:/Programs/shread_plot/database/SNOTEL')
+this_dir = Path('C:/Programs/shread_dash/database/SNOTEL')
 
 def create_app(db_path):
     app = dash.Dash(

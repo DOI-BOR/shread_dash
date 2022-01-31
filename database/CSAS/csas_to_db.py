@@ -2,6 +2,8 @@
 """
 Created on Fri Apr  2 09:20:37 2021
 
+Compiles CSAS data into SQLite DB
+
 @author: buriona,tclarkin
 """
 
@@ -19,7 +21,7 @@ from io import StringIO
 
 # Load directories and defaults
 this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_plot/database/CSAS')
+#this_dir = Path('C:/Programs/shread_dash/database/CSAS')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
