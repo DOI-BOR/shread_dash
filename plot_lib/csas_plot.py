@@ -11,9 +11,11 @@ Script for running the CSAS plot in the dashboard (shread_dash.py)
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from plot_lib.utils import screen_csas
 from database import csas_gages, dust_ts, dust_layers
-from hydroimport import import_csas_live
+
+from plot_lib.utils import screen_csas
+from plot_lib.utils import import_csas_live
+
 
 def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo,offline=True):
     """
@@ -41,8 +43,6 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo,
             csas_df = screen_csas(site, start_date, end_date,dtype)
         else:
             csas_df = import_csas_live(site,start_date,end_date,dtype)
-
-        #print(csas_df)
 
         if site == "SBSG":
             csas_f_df[site] = csas_df["flow"]
@@ -140,6 +140,5 @@ def get_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, plot_albedo,
                 range=[0, 100]),
             margin={'l': 40, 'b': 40, 't': 0, 'r': 40},
         )
-    print('csas plot is done')
 
     return fig

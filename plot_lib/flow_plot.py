@@ -15,12 +15,12 @@ import pytz
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_csas_live
 from database.FLOW.rfc_to_db import import_rfc
 from database.FLOW.usgs_to_db import import_nwis
 
 from database import csas_gages, usgs_gages
 
+from plot_lib.utils import import_csas_live
 from plot_lib.utils import shade_forecast,screen_csas,screen_rfc,screen_usgs
 
 def get_log_scale_dd(ymax):
@@ -72,13 +72,13 @@ def get_log_scale_dd(ymax):
     ]
     return log_scale_dd
 
-def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel,
+def get_flow_plot(usgs_sel, dtype, forecast_sel, start_date, end_date, csas_sel,
                   plot_albedo,offline=True):
     """
     :description: this function updates the flow plot
     :param usgs_sel: list of selected usgs sites ([])
     :param dtype: data type (dv/iv)
-    :param plot_forecast: boolean, plot forecast data (NWS-RFC)
+    :param forecast_sel: list, forecast variables
     :param start_date: start date (from date selector)
     :param end_date: end date (from date selector)
     :param csas_sel: list of selected csas sites ([])
@@ -88,7 +88,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
 
     # Check if forecast data needed
     if pd.to_datetime(end_date) <= dt.datetime.now():
-        plot_forecast = []  # no forecast data needed if dates aren't displayed
+        forecast_sel = []  # no forecast data needed if dates aren't displayed
 
     # Create output dfs with standard index
     if dtype == "dv":
@@ -100,7 +100,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
     usgs_f_df = pd.DataFrame(index=dates)
     name_df = pd.DataFrame(index=usgs_sel)
 
-    if plot_forecast:
+    if "flow" in forecast_sel:
         rfc_f_df = pd.DataFrame(index=dates)
 
     for g in usgs_sel:
@@ -114,8 +114,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
         usgs_in = usgs_f_df.merge(usgs_in["flow"],left_index=True,right_index=True,how="left")
         usgs_f_df[g] = usgs_in["flow"]
 
-    if plot_forecast:
-        print("Attempting to include forecast data")
+    if "flow" in forecast_sel:
 
         # dummy forecast date for now
         fcst_dt = "last"
@@ -123,7 +122,6 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
         for g in usgs_sel:
             if pd.isna(usgs_gages.loc[int(g),"rfc"])==False:
                 rfc = usgs_gages.loc[int(g),"rfc"]
-                #print(rfc)
 
                 if offline:
                     rfc_in,fcst_dt = screen_rfc(rfc,fcst_dt,dtype)
@@ -147,10 +145,9 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
 
     if len(usgs_sel) > 0:
         flow_max = usgs_f_df.max().max()
-        if (plot_forecast) and (len(rfc_f_df)>0):
+        if ("flow" in forecast_sel) and (len(rfc_f_df)>0):
             flow_max = np.nanmax([flow_max,rfc_f_df.max().max()])
     else:
-        print("No FLOW selected.")
         flow_max = 50
 
 
@@ -187,7 +184,7 @@ def get_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel
             line=dict(color=usgs_gages.loc[int(g), "color"]),
             name=name_df.loc[g, "name"],
             yaxis="y1"))
-        if (plot_forecast) and (g in rfc_f_df.columns):
+        if ("flow" in forecast_sel) and (g in rfc_f_df.columns):
             fig.add_trace(go.Scatter(
                 x=rfc_f_df.index,
                 y=rfc_f_df[g],

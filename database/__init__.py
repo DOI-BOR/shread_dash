@@ -204,13 +204,14 @@ for c in csas_gages.index:
         round(csas_gages.elev_ft[c], 0)) + " ft)", "value": c})
 
 # Generate NDFD list
-ndfd_list = [{"label":"Min. Temp (F)","value":"mint"},
-             {"label":"Max. Temp (F)","value":"maxt"},
-             #{"label":"Precip Forecast","value":"qpf"},
-             {"label":"Snow Forecast","value":"snow"},
-             #{"label":"Precip Prob.","value":"pop12"},
-             #{"label":"Relative Humidity","value":"rhm"},
-             #{"label":"Sky Coverage","value":"sky"}
+forecast_list = [{"label":"Flow (RFC)","value":"flow"},
+             {"label":"Min. Temp","value":"mint"},
+             {"label":"Max. Temp","value":"maxt"},
+             {"label":"Precip (QPF)","value":"qpf"},
+             {"label": "Precip Prob.", "value": "pop12"},
+             {"label":"Snow","value":"snow"},
+             {"label":"Relative Humidity","value":"rhm"},
+             {"label":"Sky Coverage","value":"sky"}
              ]
 
 # Import CSAS dust on snow data

@@ -45,7 +45,7 @@ db = SQLAlchemy(app.server)
 db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")
 binds = db.get_binds()
-SENSOR = 'mint' # or 'snowdepth'
+SENSOR = 'pop12' # or 'snowdepth'
 slopes = [0, 80]
 elrange = [4000, 13000]
 s_date = '2022-01-28'
@@ -56,7 +56,9 @@ bind_dict = {
     'maxt': 'maxt',
     'pop12':'pop12',
     'qpf':'qpf',
-    'snow':'snow'
+    'snow':'snow',
+    'sky':'sky',
+    'rhm':'rhm'
 }
 bind = bind_dict[SENSOR]
 print(bind)
@@ -79,6 +81,6 @@ df = pd.read_sql(
     db.get_engine(bind=bind), 
     parse_dates=['Date_Valid'],
 )
-print(df["Date_Valid"].min())
-print(df["Date_Valid"].max())
+print(df["Date"].min())
+print(df["Date"].max())
 #sys.exit(0)

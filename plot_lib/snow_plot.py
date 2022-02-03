@@ -13,11 +13,11 @@ Script for running the snow plot in the dashboard (shread_dash.py)
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_snotel,import_csas_live
+from plot_lib.utils import import_snotel,import_csas_live
 
 from database import snotel_sites
 from database import csas_gages
-from plot_lib.utils import screen_spatial,ba_stats_all,screen_csas,screen_snotel
+from plot_lib.utils import screen_spatial,ba_stats_all,ba_stats_std,screen_csas,screen_snotel
 from plot_lib.utils import ba_min_plot, ba_max_plot, ba_mean_plot, ba_median_plot
 from plot_lib.utils import shade_forecast
 
@@ -46,7 +46,7 @@ def get_basin_stats(snodas_df,stype="swe"):
     return stats
 
 def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
-                     end_date, snotel_sel,csas_sel,plot_albedo,
+                     end_date, dtype,snotel_sel,csas_sel,forecast_sel,plot_albedo,
                   offline=True):
     """
     :description: this function updates the snowplot
@@ -80,7 +80,6 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
     ## Process SHREAD data
     # Filter data
     if basin == None:
-        print("No basins selected.")
         snodas_plot = False
         snodas_max = np.nan
         basin_stats_str = ''
@@ -116,7 +115,6 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
 
     if len(snotel_sel) == 0:
         snotel_max = np.nan
-        print("No SNOTEL selected.")
     else:
         snotel_max = snotel_s_df.max().max()
 
@@ -131,8 +129,58 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         if (plot_albedo) and (site != "SBSG") and (site != "PTSP"):
             csas_a_df[site] = csas_df["albedo"]
 
+    # Process NDFD, if selected
+
+    # Filter data
+    rhm = sky = snow = False
+
+    if (basin != None) or (len(forecast_sel)>0):
+
+        # remove rfc
+        if "flow" in forecast_sel:
+            forecast_sel.remove("flow")
+
+        # check if there are still items
+        if len(forecast_sel) > 0:
+
+            if dtype=="iv":
+                step="D"
+            elif dtype=="dv":
+                step="D"
+
+            ndfd_max = 0
+            rhm = sky = snow = False
+            for sensor in forecast_sel:
+
+                if sensor in ["qpf","maxt","mint","pop12"]:
+                    continue
+
+                df = screen_spatial(sensor,start_date,end_date,basin,aspects,elrange,slopes,"Date")
+                if df.empty:
+                    continue
+                else:
+                    # Calculate basin average values
+                    ba_ndfd = ba_stats_std(df, "Date")
+                    ba_ndfd = ba_ndfd.tz_localize(tz="utc")
+
+                    if sensor!="qpf":
+                        ba_ndfd = ba_ndfd['mean'].resample(step).mean()
+                    else:
+                        ba_ndfd = ba_ndfd['mean'].resample(step).sum()
+
+                    ndfd = pd.DataFrame(index=dates)
+
+                    if sensor == "sky":
+                        sky = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
+
+                    if sensor == "snow":
+                        snow = ndfd.merge(ba_ndfd-1,left_index=True,right_index=True,how="left")
+
+                    if sensor == "rhm":
+                        rhm = ndfd.merge(ba_ndfd, left_index=True, right_index=True, how="left")
+
     ### Plot the data
-    ymax = max([snodas_max,snotel_max,20]) * 1.25
+    ymax = np.nanmax([snodas_max,snotel_max,20]) * 1.25
 
     print("Updating snow plot...")
     fig = go.Figure()
@@ -162,6 +210,51 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
                 line=dict(color=csas_gages.loc[c, "color"], dash="dash"),
                 name=c + " 100% - Albedo",
                 yaxis="y2"))
+
+    if snow is not False:
+        fig.add_trace(go.Scatter(
+            x=snow.index,
+            y=[ymax - 2] * len(snow),
+            mode="text",
+            textfont=dict(
+                color="black"
+            ),
+            marker=dict(color="black"),
+            text=snow.round(2),
+            name="Snow (SWE)",
+            showlegend=False,
+            yaxis="y1"
+        ))
+
+    if sky is not False:
+        fig.add_trace(go.Scatter(
+            x=sky.index,
+            y=[ymax-4]*len(sky),
+            mode="text",
+            textfont=dict(
+                color="green"
+            ),
+            marker=dict(color="green"),
+            text=sky.round(0),
+            name="Sky Coverage",
+            showlegend=False,
+            yaxis="y1"
+        ))
+
+    if rhm is not False:
+        fig.add_trace(go.Scatter(
+            x=rhm.index,
+            y=[ymax - 6] * len(rhm),
+            mode="text",
+            textfont=dict(
+                color="brown"
+            ),
+            marker=dict(color="brown"),
+            text=rhm.round(0),
+            name="Relative Humidity",
+            showlegend=False,
+            yaxis="y1"
+        ))
 
     fig.add_trace(shade_forecast(ymax))
     fig.update_layout(
@@ -194,8 +287,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
                 range=[0, 100]),
             margin={'l': 40, 'b': 40, 't': 0, 'r': 40},
         )
-    print('snow plot is done')
-    
+
     if snodas_plot:
         return fig, basin_stats_str
     

@@ -29,7 +29,7 @@ from dash.dependencies import Input, Output, State
 import database
 from database import basin_list
 from database import start_date, end_date, dust_disable
-from database import snotel_list,usgs_list,csas_list,ndfd_list
+from database import snotel_list,usgs_list,csas_list,forecast_list
 from database import sloperange, elevrange, aspectdict, elevdict, slopedict
 
 from plot_lib.utils import get_plot_config
@@ -51,7 +51,7 @@ try:
     presets = pd.read_csv(os.path.join(res_dir, "presets.csv"))
 except FileNotFoundError:
     presets = pd.DataFrame()
-for col in ["snotels","usgss","csass","elevations","aspects","slopes"]:
+for col in ["snotels","usgss","csass","elevations","aspects","slopes","frcst"]:
     presets[col] = presets[col].apply(lambda x: json.loads(x))
 presets.index = presets.id
 preset_options = list()
@@ -205,19 +205,19 @@ def get_layout():
                                 value='dv',
                                 inline=True
                             ),
-                            dbc.Checkbox(
-                                id='plot_forecast',
-                            ),
-                            dbc.Label(
-                                "Include Forecast Data",
-                                style=dict(marginLeft=10),
-                                html_for="plot_forecast",
-                            ),
+                            # dbc.Checkbox(
+                            #     id='plot_forecast',
+                            # ),
+                            # dbc.Label(
+                            #     "Include Forecast Data",
+                            #     style=dict(marginLeft=10),
+                            #     html_for="plot_forecast",
+                            # ),
                             html.Div(html.P()),
-                            dbc.Label('Select NDFD variables:'),
+                            dbc.Label('Select forecast variables:'),
                             dcc.Dropdown(
-                                id='ndfd_sel',
-                                options=ndfd_list,
+                                id='forecast_sel',
+                                options=forecast_list,
                                 placeholder="Select NDFD variables",
                                 value=[],
                                 multi=True),
@@ -393,12 +393,10 @@ app.layout = get_layout()
 ### Configure callback functions ###
 
 @app.callback(
-    Output('plot_forecast', 'disabled'),
-    Output('plot_forecast', 'checked'),
-    [Input('date_selection', 'end_date'),
-     State('plot_forecast', 'checked')]
+    Output('forecast_sel', 'disabled'),
+    [Input('date_selection', 'end_date')]
 )
-def disable_forecast(end_date,plot_forecast):
+def disable_forecast(end_date):
     """
     :description: this function disables forecast data if time window doesn't exctend to future.
     :param end_date: the end date selected
@@ -406,17 +404,17 @@ def disable_forecast(end_date,plot_forecast):
     """
     end_date = dt.datetime.strptime(end_date, "%Y-%m-%d")
     today = dt.datetime.now()
-    print(today)
+    #print(today)
     if end_date<today:
         print("forecasts disabled.")
-        return(True,False)
+        return(True)
     else:
-        return(False,plot_forecast)
+        return(False)
 
 @app.callback(
     Output('basin', 'value'),
     Output('dtype', 'value'),
-    Output('plot_forecast', 'value'),
+    Output('forecast_sel', 'value'),
     Output('plot_albedo_flow', 'value'),
     Output('stype', 'value'),
     Output('plot_dust', 'value'),
@@ -436,8 +434,7 @@ def load_presets(a,b,c,d,e):
     """
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     id = changed_id.split(".")[0]
-    print(changed_id)
-    print(id)
+    #print(changed_id)
     if id not in presets.index:
         id = presets.index[0]
     # basins
@@ -497,19 +494,34 @@ def load_preset_dates(a,b,c,start,end):
         Input('slopes', 'value'),
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
+        Input('dtype', 'value'),
         Input('snotel_sel', 'value'),
         Input('csas_sel','value'),
+        Input('forecast_sel','value'),
         Input('plot_albedo_snow','checked'),
-        Input('offline','checked')
+        Input('offline','checked'),
+        State('snow_plot', 'figure'),
+        State('mean_elevation', 'children'),
     ])
 def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
-                     end_date, snotel_sel,csas_sel,plot_albedo,offline):
+                     end_date, dtype,snotel_sel,csas_sel,forecast_sel,plot_albedo,offline,fig,basin_stats):
 
-    fig, basin_stats = get_snow_plot(
-        basin, stype, elrange, aspects, slopes, start_date,
-        end_date, snotel_sel,csas_sel,plot_albedo,
-        offline
-    )
+    fcst_update = True
+    ctx = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if ctx == "forecast_sel":
+        fcst_update = False
+        for fcst in forecast_sel:
+            if fcst in ["snow","rhm","sky"]:
+                fcst_update = True
+            else:
+                continue
+    if fcst_update:
+        fig, basin_stats = get_snow_plot(
+            basin, stype, elrange, aspects, slopes, start_date,
+            end_date, dtype,snotel_sel,csas_sel,forecast_sel,plot_albedo,
+            offline
+        )
+
     return fig, basin_stats
 
 @app.callback(
@@ -525,19 +537,30 @@ def update_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         Input('csas_sel','value'),
         Input('plot_albedo_met','checked'),
         Input('dtype', 'value'),
-        Input('plot_forecast', 'checked'),
-        Input('ndfd_sel','value'),
+        Input('forecast_sel','value'),
         Input('offline','checked'),
+        State('met_plot', 'figure')
     ])
 def update_met_plot(basin, elrange, aspects, slopes, start_date,
                     end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-                    plot_forecast,ndfd_sel,offline):
+                    forecast_sel,offline,fig):
 
-    fig = get_met_plot(
-        basin, elrange, aspects, slopes, start_date,
-        end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-        plot_forecast,ndfd_sel,offline
-    )
+    fcst_update = True
+    ctx = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if ctx == "forecast_sel":
+        fcst_update = False
+        for fcst in forecast_sel:
+            if fcst in ["mint","maxt","qpf","pop12"]:
+                fcst_update = True
+            else:
+                continue
+
+    if fcst_update:
+        fig = get_met_plot(
+            basin, elrange, aspects, slopes, start_date,
+            end_date, snotel_sel, csas_sel, plot_albedo, dtype,
+            forecast_sel,offline
+        )
     return fig
 
 @app.callback(
@@ -545,21 +568,33 @@ def update_met_plot(basin, elrange, aspects, slopes, start_date,
     [
         Input('usgs_sel', 'value'),
         Input('dtype', 'value'),
-        Input('plot_forecast', 'checked'),
+        Input('forecast_sel', 'value'),
         Input('date_selection', 'start_date'),
         Input('date_selection', 'end_date'),
         Input('csas_sel','value'),
         Input('plot_albedo_flow','checked'),
         Input('offline','checked'),
+        State('flow_plot', 'figure'),
     ])
-def update_flow_plot(usgs_sel, dtype, plot_forecast, start_date, end_date,
+def update_flow_plot(usgs_sel, dtype, forecast_sel, start_date, end_date,
                      csas_sel, plot_albedo,
-                     offline):
+                     offline,fig):
 
-    fig = get_flow_plot(
-        usgs_sel, dtype, plot_forecast, start_date, end_date, csas_sel, plot_albedo,
-        offline
-    )
+    fcst_update = True
+    ctx = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
+    if ctx == "forecast_sel":
+        fcst_update = False
+        for fcst in forecast_sel:
+            if fcst in ["flow"]:
+                fcst_update = True
+            else:
+                continue
+
+    if fcst_update:
+        fig = get_flow_plot(
+            usgs_sel, dtype, forecast_sel, start_date, end_date, csas_sel, plot_albedo,
+            offline
+        )
     return fig
 
 @app.callback(
@@ -582,8 +617,8 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,of
 # @app.callback(
 #     Output('test_plot', 'figure'),
 #     [
-#         Input('plot_forecast', 'checked'),
-#         Input('ndfd_sel','value'),
+#         Input('forecast_sel', 'value'),
+#         Input('forecast_sel','value'),
 #         Input('basin', 'value'),
 #         Input('elevations', 'value'),
 #         Input('aspects', 'value'),
@@ -591,10 +626,10 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,of
 #         Input('date_selection', 'start_date'),
 #         Input('date_selection', 'end_date'),
 #     ])
-# def update_test_plot(plot_forecast,ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date):
+# def update_test_plot(forecast_sel,forecast_sel,basin,elrange,aspects,slopes,start_date,end_date):
 #
-#     fig = get_test_plot(plot_forecast,
-#         ndfd_sel,basin,elrange,aspects,slopes,start_date,end_date
+#     fig = get_test_plot(forecast_sel,
+#         forecast_sel,basin,elrange,aspects,slopes,start_date,end_date
 #     )
 #     return fig
 

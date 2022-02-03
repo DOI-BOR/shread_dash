@@ -13,18 +13,19 @@ Script for running the meteorology plot in the dashboard (shread_dash.py)
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from hydroimport import import_snotel,import_csas_live
+import time
 
 from database import snotel_sites
 from database import csas_gages
 
-from plot_lib.utils import screen_spatial,ba_stats_all,screen_csas,screen_snotel
+from plot_lib.utils import import_snotel,import_csas_live
+from plot_lib.utils import screen_spatial,ba_stats_std,screen_csas,screen_snotel
 from plot_lib.utils import ba_mean_plot
 from plot_lib.utils import shade_forecast
 
 def get_met_plot(basin, elrange, aspects, slopes, start_date,
                  end_date, snotel_sel, csas_sel, plot_albedo, dtype,
-                 plot_forecast,ndfd_sel,offline=True):
+                 forecast_sel,offline=True):
     """
     :description: this function updates the meteorology plot
     :param basin: the selected basins (checklist)
@@ -39,10 +40,15 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
     :param dtype: data type (dv/iv)
     :return: update figure
     """
-    print(plot_albedo)
+
    # Create date axis
     dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
     freeze = 32
+
+    if len(forecast_sel)>0:
+        plot_forecast=True
+    else:
+        plot_forecast=False
 
     ## Process SNOTEL data (if selected)
     if len(snotel_sel) > 0:
@@ -78,7 +84,6 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
         snotel_t_max = np.nan
         snotel_t_min = np.nan
         snotel_p_max = np.nan
-        print("No snotel selected.")
 
     ## Process CSAS data (if selected)
 
@@ -98,51 +103,66 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
 
     csas_max = np.nanmax([csas_t_df.max().max(),csas_a_df.max().max()])
 
-
-
     # Process NDFD, if selected
+
     # Filter data
-    if (basin == None) or (plot_forecast==False):
-        print("No basins selected.")
-        ndfd_plot = False
-        ndfd_max = ndfd_min = ndfd_snow = np.nan
-    elif len(ndfd_sel)>0:
-        ndfd_plot = True
-        ndfd_max = ndfd_min = ndfd_snow = np.nan
-        if "snow" in str(ndfd_sel):
-            ndfd_sel.append("pop12")
-        mint = maxt = snow = pop12 = False
-        for sensor in ndfd_sel:
-            df = screen_spatial(sensor,start_date,end_date,basin,aspects,elrange,slopes,"Date")
-            if df.empty:
-                continue
-            else:
-                # Calculate basin average values
-                ba_ndfd = ba_stats_all(df, "Date")
+    mint = maxt = qpf = rhm = sky = pop12 = False
+    ndfd_max = ndfd_min = ndfd_qpf = 0
 
-                if sensor=="mint":
-                    mint = ba_ndfd
-                    ndfd_min = mint["mean"].min()
+    if (basin != None) or (len(forecast_sel)>0):
 
-                if sensor=="maxt":
-                    maxt = ba_ndfd
-                    ndfd_max = maxt["mean"].max()
+        # check if there are still items
+        if len(forecast_sel) > 0:
 
-                if sensor=="snow":
-                    snow = ba_ndfd
-                    ndfd_snow = snow["mean"].max()
+            if dtype=="iv":
+                step="D"
+            elif dtype=="dv":
+                step="D"
 
-                if sensor=="pop12":
-                    pop12 = ba_ndfd
-    else:
-        ndfd_plot = False
-        ndfd_max = ndfd_min = ndfd_snow = np.nan
+            ndfd_max = ndfd_min = ndfd_qpf = np.nan
+
+            mint = maxt = qpf = pop12 = False
+            for sensor in forecast_sel:
+
+                if sensor in ["snow","rhm","sky","flow"]:
+                    continue
+
+                df = screen_spatial(sensor,start_date,end_date,basin,aspects,elrange,slopes,"Date")
+                if df.empty:
+                    continue
+                else:
+                    # Calculate basin average values
+                    ba_ndfd = ba_stats_std(df, "Date")
+                    ba_ndfd = ba_ndfd.tz_localize(tz="utc")
+
+                    if sensor!="qpf":
+                        ba_ndfd = ba_ndfd['mean'].resample(step).mean()
+                    else:
+                        ba_ndfd = ba_ndfd['mean'].resample(step).sum()
+
+                    ndfd = pd.DataFrame(index=dates)
+
+                    if sensor=="mint":
+                        mint = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
+                        ndfd_min = mint.min().item()
+
+                    if sensor=="maxt":
+                        maxt = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
+                        ndfd_max = maxt.min().item()
+
+                    if sensor=="pop12":
+                        pop12 = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
+                        pop12 = ba_ndfd
+
+                    if sensor == "qpf":
+                        qpf = ndfd.merge(ba_ndfd-1,left_index=True,right_index=True,how="left")
+                        ndfd_qpf = qpf.min().item()
 
 
     # Calculate plotting axes values
     ymin = np.nanmin([ndfd_min,snotel_t_min, 0])
     ymax = np.nanmax([ndfd_max,snotel_t_max, csas_max, freeze]) * 1.25
-    ymax2 = np.nanmax([ndfd_snow,snotel_p_max, 1]) * 2
+    ymax2 = np.nanmax([ndfd_qpf,snotel_p_max, 1]) * 2
 
     # Create figure
     print("Updating meteorology plot...")
@@ -180,6 +200,17 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
             yaxis="y1"
         ))
 
+    if qpf is not False:
+        fig.add_trace(go.Bar(
+            x=qpf.index,
+            y=qpf.loc[:,"mean"],
+            marker_color="black",
+            text="NWS QPF (in)",
+            showlegend=True,
+            name="NWS Mean Snow Forecast for selection",
+            yaxis="y2"
+        ))
+
     for c in csas_t_df.columns:
         fig.add_trace(go.Scatter(
             x=csas_t_df.index,
@@ -200,23 +231,26 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                 name=c+" 100% - Albedo",
                 yaxis="y1"))
 
-    if ndfd_plot:
-        if mint is not False:
-            fig.add_trace(ba_mean_plot(mint, f"Min Temp", "blue"))
+    if mint is not False:
+        fig.add_trace(ba_mean_plot(mint, f"Min Temp", "blue"))
 
-        if maxt is not False:
-            fig.add_trace(ba_mean_plot(maxt, f"Max Temp", "red"))
+    if maxt is not False:
+        fig.add_trace(ba_mean_plot(maxt, f"Max Temp", "red"))
 
-        if snow is not False:
-            fig.add_trace(go.Bar(
-                x=snow.index,
-                y=snow["mean"],
-                text=pop12['mean'],
-                marker_color="black",
-                showlegend=False,
-                name="NWS Mean Snow Forecast for selection",
-                yaxis="y2"
-            ))
+    if pop12 is not False:
+        fig.add_trace(go.Scatter(
+            x=pop12.index,
+            y=[ymax-ymax2]*len(pop12),
+            mode="text",
+            textfont=dict(
+                color="grey"
+            ),
+            line=dict(color="grey"),
+            text=pop12.round(0),
+            name="Probability of Precip.",
+            showlegend=False,
+            yaxis="y1"
+        ))
 
     fig.add_trace(shade_forecast(ymax))
 
