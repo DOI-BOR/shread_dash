@@ -124,6 +124,7 @@ database/SNOTEL/data/*.csv
 *.tif
 *.db
 *.zip
+*.bin
 
 # .idea folder
 .idea/
