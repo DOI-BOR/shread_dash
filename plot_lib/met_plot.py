@@ -155,7 +155,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                         pop12 = ba_ndfd
 
                     if sensor == "qpf":
-                        qpf = ndfd.merge(ba_ndfd-1,left_index=True,right_index=True,how="left")
+                        qpf = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
                         ndfd_qpf = qpf.min().item()
 
 
@@ -246,8 +246,8 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                 color="grey"
             ),
             line=dict(color="grey"),
-            text=pop12.round(0),
-            name="Probability of Precip.",
+            text=round(pop12*100,0),
+            name="Precip. Prob. (%)",
             showlegend=False,
             yaxis="y1"
         ))

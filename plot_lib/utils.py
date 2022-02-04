@@ -42,7 +42,6 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
         ext = "DAILY"
     if dtype == "iv":
         ext = "DAILY"
-        print("Sub-daily data not available.")
 
     # TODO: basinaverage data
     # TODO: soil moisture
@@ -113,8 +112,6 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
         if verbose==True:
             print("Added to dataframe")
 
-    # print(site_triplet)
-
     # Return output dataframe
     return(data)
 
@@ -154,7 +151,6 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
         ext = "Daily.php"
 
     site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
-    print(site_url)
 
     failed = True
     tries = 0
@@ -165,7 +161,6 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
         except TimeoutError:
             raise Exception("Timeout; Data unavailable?")
             tries += 1
-            print(tries)
             if tries > 10:
                 return
 
@@ -177,10 +172,8 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     csas_in = f[1]
     if csas_in.empty:
-        print("Data not available")
         return pd.DataFrame(columns=["snwd","temp","flow","albedo"])
     if csas_in is None:
-        print("Data not available")
         return pd.DataFrame(columns=["snwd","temp","flow","albedo"])
 
     if dtype == "dv":
@@ -229,8 +222,6 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
 
     return(csas_out)
 
-
-
 # Function to screen data by basin, aspect, elevation and slopes (using points)
 def screen_spatial(db_type, s_date, e_date, basin, aspects=[0, 360],
                   elrange=[0, 20000], slopes=[0, 100],date_col="Date"):
@@ -245,7 +236,6 @@ def screen_spatial(db_type, s_date, e_date, basin, aspects=[0, 360],
         f"and elev_ft >= {elrange[0]} "
         f"and elev_ft <= {elrange[1]} "
     )
-    # print(db_type, bind, qry)
     input_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['Date'])
     if aspects[0] < 0:
         minaspect = 360 + aspects[0]
@@ -289,7 +279,6 @@ def screen_csas(site,s_date,e_date,dtype):
         f"`date` >= '{s_date}' "
         f"and `date` <= '{e_date}' "
     )
-    # print(db_type, bind, qry)
     out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
 
     out_df.index = pd.to_datetime(out_df['date'], utc=True)
@@ -304,7 +293,6 @@ def screen_snotel(site,s_date,e_date):
         f"`date` >= '{s_date}' "
         f"and `date` <= '{e_date}' "
     )
-    # print(db_type, bind, qry)
     out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
 
     out_df.index = pd.to_datetime(out_df['date'], utc=True)
@@ -318,7 +306,6 @@ def screen_usgs(site,s_date,e_date,dtype):
         f"`date` >= '{s_date}' "
         f"and `date` <= '{e_date}' "
     )
-    # print(db_type, bind, qry)
     out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
 
     out_df.index = pd.to_datetime(out_df['date'], utc=True)
@@ -336,13 +323,11 @@ def screen_rfc(site,fcst_dt,dtype):
         ).dropna()
         last = unique_dates.max().item()
         fcst_dt = last.strftime("%Y-%m-%d")
-        #print(fcst_dt)
 
     qry = (
         f"select * from site_{site} where "
         f"`fcst_dt` = '{fcst_dt}' "
     )
-    # print(db_type, bind, qry)
     out_df = pd.read_sql(qry, db.get_engine(bind=bind), parse_dates=['date'])
 
     out_df.index = pd.to_datetime(out_df['date'], utc=True)

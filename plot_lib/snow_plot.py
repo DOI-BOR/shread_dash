@@ -221,7 +221,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             ),
             marker=dict(color="black"),
             text=snow.round(2),
-            name="Snow (SWE)",
+            name="Snow (in, SWE)",
             showlegend=False,
             yaxis="y1"
         ))
@@ -236,7 +236,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             ),
             marker=dict(color="green"),
             text=sky.round(0),
-            name="Sky Coverage",
+            name="Sky Coverage (%)",
             showlegend=False,
             yaxis="y1"
         ))

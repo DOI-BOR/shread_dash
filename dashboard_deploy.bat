@@ -8,5 +8,7 @@ call :GET_THIS_DIR
 call chdir %THIS_DIR%
 set PYTHONPATH=%THIS_DIR%
 python shread_dash.py
-pause
-exit
+
+:GET_THIS_DIR
+set THIS_DIR=%~dp0
+pushd %THIS_DIR%

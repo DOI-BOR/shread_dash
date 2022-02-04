@@ -1,4 +1,4 @@
-Last Updated: 2022-01-31
+Last Updated: 2022-02-04
 
 README for:
 Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py)
@@ -24,6 +24,8 @@ Follow these steps if this is your first installation of the dashboard.
 		If you don't already have Python, install miniforge: https://github.com/conda-forge/miniforge#download
 		You will want to install this LOCALLY. The path should be something like:
 			C:\Users\{your user name}\AppData\Local\miniforge3
+		If you already have Python installed, be sure to note the directory where it is installed and use that
+		for the edits described in Step 4C.
 		
 	B. GitHub
 		If you don't already have an account on GitHub, join here: https://www.github.com/join

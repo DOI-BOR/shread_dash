@@ -6,14 +6,12 @@ set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
-set SS=%time%
+set start=%time%
 python C:\Programs\shread_dash\database\FLOW\rfc_to_db.py
-set EE=%time%
-set /A total=%EE%-%SS%
-echo process took %total%
+echo process began at %start%
+echo process complete at %time%
+pause
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
 pushd %THIS_DIR%
-
-pause
