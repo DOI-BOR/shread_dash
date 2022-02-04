@@ -53,7 +53,7 @@ def create_app():
     rfc_iv_db_path = Path(db_path, 'FLOW', 'rfc_iv.db')
     ndfd_mint_db_path = Path(db_path, 'SHREAD', 'mint.db')
     ndfd_maxt_db_path = Path(db_path, 'SHREAD', 'maxt.db')
-    ndfd_rhm_db_path = Path(db_path, 'SHREAD', 'rhm.db')
+    #ndfd_rhm_db_path = Path(db_path, 'SHREAD', 'rhm.db')
     ndfd_pop12_db_path = Path(db_path, 'SHREAD', 'pop12.db')
     ndfd_qpf_db_path = Path(db_path, 'SHREAD', 'qpf.db')
     ndfd_snow_db_path = Path(db_path, 'SHREAD', 'snow.db')
@@ -70,7 +70,7 @@ def create_app():
     rfc_iv_db_con_str = f'sqlite:///{rfc_iv_db_path.as_posix()}'
     ndfd_mint_db_con_str = f'sqlite:///{ndfd_mint_db_path}'
     ndfd_maxt_db_con_str = f'sqlite:///{ndfd_maxt_db_path}'
-    ndfd_rhm_db_con_str = f'sqlite:///{ndfd_rhm_db_path}'
+    #ndfd_rhm_db_con_str = f'sqlite:///{ndfd_rhm_db_path}'
     ndfd_pop12_db_con_str = f'sqlite:///{ndfd_pop12_db_path}'
     ndfd_qpf_db_con_str = f'sqlite:///{ndfd_qpf_db_path}'
     ndfd_snow_db_con_str = f'sqlite:///{ndfd_snow_db_path}'
@@ -89,7 +89,7 @@ def create_app():
         'rfc_iv':rfc_iv_db_con_str,
         "mint": ndfd_mint_db_con_str,
         "maxt": ndfd_maxt_db_con_str,
-        "rhm": ndfd_rhm_db_con_str,
+        #"rhm": ndfd_rhm_db_con_str,
         "pop12": ndfd_pop12_db_con_str,
         "qpf": ndfd_qpf_db_con_str,
         "snow": ndfd_snow_db_con_str,
@@ -117,12 +117,7 @@ os.chdir(app_dir)
 
 print('Calculating bounds of SNODAS.db')
 # Create list of basins
-# df_local_ids = pd.read_sql(
-# 'select distinct LOCAL_ID as LOCAL_ID, LOCAL_NAME from sd', db.engine).dropna()
-# basin_list = list()
-# print(f'  {len(df_local_ids)} - distinct basins {df_local_ids["LOCAL_ID"].to_list()}')
-# for i, b in df_local_ids.iterrows():
-#     basin_list.append({"label": b["LOCAL_NAME"], "value": b['LOCAL_ID']})
+#TODO call from .csv for future user input
 basin_list = [
     {'label': 'NONE', 'value': None},
     {'label': 'SAN JUAN - NAVAJO RES NR ARCHULETA', 'value': 'NVRN5L_F'}, 
@@ -210,7 +205,7 @@ forecast_list = [{"label":"Flow (RFC)","value":"flow"},
              {"label":"Precip (QPF)","value":"qpf"},
              {"label": "Precip Prob.", "value": "pop12"},
              {"label":"Snow","value":"snow"},
-             {"label":"Relative Humidity","value":"rhm"},
+             #{"label":"Relative Humidity","value":"rhm"},
              {"label":"Sky Coverage","value":"sky"}
              ]
 

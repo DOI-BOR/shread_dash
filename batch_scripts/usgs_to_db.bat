@@ -6,9 +6,14 @@ set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
+set SS=%time%
 python C:\Programs\shread_dash\database\FLOW\usgs_to_db.py
-pause
+set EE=%time%
+set /A total=%EE%-%SS%
+echo process took %total%
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
 pushd %THIS_DIR%
+
+pause

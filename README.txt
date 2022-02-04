@@ -86,7 +86,7 @@ Follow these steps if this is your first installation of the dashboard.
 			resources/gis
 		
 		To C:Programs/shread_wd, copy shread_config_shread_dash.ini from C:/Programs/shread/config
-		To C:/Programs/resources/gis, copy the two .geojson files found in C:/Programs/shread_dash/resources
+		To C:/Programs/shread_wd/resources/gis, copy the two .geojson files found in C:/Programs/shread_dash/resources
 		
 	C. Configure bat files
 		Open the following files with a text editor and make sure the path to miniconda is correct.
@@ -96,19 +96,21 @@ Follow these steps if this is your first installation of the dashboard.
 			C:/Programs/shread_dash/batch_scripts/usgs_to_db.bat (line 3 and 5)
 			C:/Programs/shread_dash/batch_scripts/snotel_to_db.bat (line 3 and 5)
 			C:/Programs/shread_dash/batch_scripts/update_dust.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/shread_snow_to_db.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/shread_ndfd_to_db.bat (line 6 and 8)
+			C:/Programs/shread_dash/batch_scripts/shread_snow_to_db.bat (line 3, 5 and 20)
+			C:/Programs/shread_dash/batch_scripts/shread_ndfd_to_db.bat (line 16, 18 and 29)
 			
 		This can easily be done using Notepad++. Open all files. Hold Ctrl+H.
 			In Find What enter: C:\Users\tclarkin\AppData\Local\miniforge3
 			In Replace with enter: C:\Users\{your username}\AppData\Local\miniforge3
 			Click Replace All in All Opened Documents
 			Save All.
+			
+			**Note that some of the lines will have the addition of \envs\shread or \envs\shread_env
 
 5. RUN
 
 	A. Update databases
-		Double click on C:/Programs/shread_dash/updated_databases.bat
+		Double click on C:/Programs/shread_dash/database_update.bat
 		Follow prompts
 
 	B. Launch dashboard

@@ -12,6 +12,7 @@ set shread_dir=C:\Programs\
 cd %shread_dir%shread_wd\
 TITLE Running shread...
 @ECHO ON
+set SS=%time%
 call python %shread_dir%shread/shread.py -i shread_config_shread_dash.ini -s %sdate% -e %edate% -t D -p snodas
 @ECHO OFF
 
@@ -22,9 +23,12 @@ cd %shread_dir%shread_dash\database\SHREAD\
 @ECHO ON
 python shread_snow_to_db.py
 @ECHO OFF
-
-pause
+set EE=%time%
+set /A total=%EE%-%SS%
+echo process took %total%
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
 pushd %THIS_DIR%
+
+pause

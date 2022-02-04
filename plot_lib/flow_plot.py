@@ -242,6 +242,7 @@ def get_flow_plot(usgs_sel, dtype, forecast_sel, start_date, end_date, csas_sel,
     fig.update_layout(
         updatemenus=get_log_scale_dd(ymax)
     )
+
     if plot_albedo == True:
         fig.update_layout(
             yaxis2=dict(

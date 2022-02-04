@@ -7,8 +7,9 @@ call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
 python C:\Programs\shread_dash\database\CSAS\csas_dust_update.py
-pause
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
 pushd %THIS_DIR%
+
+pause
