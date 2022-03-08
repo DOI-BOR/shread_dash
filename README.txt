@@ -69,7 +69,7 @@ Follow these steps if this is your first installation of the dashboard.
 4. BUILD ENVIRONMENTS AND CONFIGURE
 	
 	A. Build Python Environments
-		Open miniconda prompt
+		Open miniforge prompt
 		Navigate to shread directory:
 			> cd C:/Programs/shread
 		Build shread environment:
@@ -78,7 +78,7 @@ Follow these steps if this is your first installation of the dashboard.
 			> cd C:/Programs/shread_dash
 		Build shread_env environment:
 			> conda env create -f environment.yml
-		Close miniconda prompt
+		Close miniforge prompt
 
 	B. Configure shread working directory
 		In C:/Programs/shread_wd, add the following folders:
@@ -115,8 +115,8 @@ Follow these steps if this is your first installation of the dashboard.
 		Double click on C:/Programs/shread_dash/database_update.bat
 		Follow prompts
 
-	B. Launch dashboard
-		Double click on C:/Programs/shread_dash/launch_dashboard.bat
+	B. Deploy dashboard
+		Double click on C:/Programs/shread_dash/dashboard_deploy.bat
 		Follow prompts (open http://127.0.0.1:5000/ in browser)
 
 
@@ -153,7 +153,7 @@ If you have already installed and configured everything for shread plot, but nee
 	If the updates pulled from GitHub resulted in any changes to the environment.yml files, do the following:
 
 	B. Update Environments (Optional):
-		Open miniconda prompt
+		Open miniforge prompt
 		Navigate to directory for the repository with changed environment.yml file:
 			> cd {Local Directory}
 		Update shread environment:
