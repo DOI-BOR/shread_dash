@@ -7,6 +7,7 @@ if NOT %ndfd%==Y (
 
 TITLE Removing previous files...
 set shread_dir=C:\Programs\
+mkdir %shread_dir%\shread_dash\database\SHREAD\data
 cd %shread_dir%\shread_dash\database\SHREAD\data
 del ndfd*.tif
 del ndfd*.csv

@@ -13,6 +13,7 @@ cd %shread_dir%shread_wd\
 TITLE Running shread...
 @ECHO ON
 set start=%time%
+mkdir %shread_dir%\shread_dash\database\SHREAD\data
 call python %shread_dir%shread/shread.py -i shread_config_shread_dash.ini -s %sdate% -e %edate% -t D -p snodas
 @ECHO OFF
 
