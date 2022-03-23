@@ -36,9 +36,9 @@ db = SQLAlchemy(app.server)
 db.reflect()
 print(f"{app.server.config['SQLALCHEMY_BINDS']}")
 binds = db.get_binds()
-SENSOR = 'usgs_iv' # or 'usgs_iv'
-s_date = '2021-10-05'
-e_date = '2021-12-17'
+SENSOR = 'usgs_dv' # or 'usgs_iv'
+s_date = '2022-03-05'
+e_date = '2022-03-23'
 
 bind_dict = {
     'usgs_iv':'usgs_iv',

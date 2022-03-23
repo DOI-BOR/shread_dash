@@ -22,8 +22,8 @@ from io import StringIO
 import dataretrieval.nwis as nwis
 
 # Load directories and defaults
-this_dir = Path(__file__).absolute().resolve().parent
-#this_dir = Path('C:/Programs/shread_dash/database/FLOW')
+#this_dir = Path(__file__).absolute().resolve().parent
+this_dir = Path('C:/Programs/shread_dash/database/FLOW')
 ZIP_IT = False
 ZIP_FRMT = zipfile.ZIP_LZMA
 DEFAULT_DATE_FIELD = 'date'
@@ -54,13 +54,13 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     if dtype == "dv":
         parameter = "00060_Mean"
         if start is None:
-            start = "2004-01-01"
+            start = "2022-01-01"
         nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S+00:00")
     elif dtype == "iv":
         parameter = "00060"
         if start is None:
-            start = "2021-12-01"
-        nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S-07:00")
+            start = "2022-03-14"
+        nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S-06:00")
 
     if (end is None) or (pd.to_datetime(end) >= dt.datetime.now()):
         end = dt.datetime.now().strftime("%Y-%m-%d")
@@ -87,13 +87,15 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
             return
 
     # Prepare output with standard index
+    #if dtype=="iv":
+    #    data.index = pd.to_datetime(data.index,utc=True)
+
     start_date = data.index.min()
     end_date = data.index.max()
 
     if dtype == "dv":
         date_index = pd.date_range(start_date, end_date, freq="D")
     elif dtype == "iv":
-        data.index = pd.to_datetime(data.index)
         date_index = pd.date_range(start_date, end_date,freq="15T")
 
     out = pd.DataFrame(index=date_index)
@@ -284,22 +286,22 @@ if __name__ == '__main__':
             site = f"0{site}"
         print(f"Downloading data for {site}")
 
-        if "end" in str(usgs_sites.columns):
-            if usgs_sites.loc[site_no,"end"]==None:
-                start = None
-                usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
-            else:
-                start = usgs_sites.loc[site_no,"end"]
-        else:
-            start = None
-            usgs_sites.loc[:,"end"] = None
-            usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
-
-        end = dt.datetime.now().strftime("%Y-%m-%d")
+        # if "end" in str(usgs_sites.columns):
+        #     if usgs_sites.loc[site_no,"end"]==None:
+        #         start = None
+        #         usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
+        #     else:
+        #         start = usgs_sites.loc[site_no,"end"]
+        # else:
+        #     start = None
+        #     usgs_sites.loc[:,"end"] = None
+        #     usgs_sites.loc[site_no, "end"] = dt.datetime.now().strftime("%Y-%m-%d")
+        #
+        # end = dt.datetime.now().strftime("%Y-%m-%d")
 
         for dtype in ["dv", "iv"]:
-            if (start!=end):
-                import_nwis(site,start,end,dtype,DEFAULT_CSV_DIR)
+            #if (start!=end):
+            import_nwis(site,None,None,dtype,DEFAULT_CSV_DIR)
 
     #usgs_sites.to_csv(os.path.join(this_dir, "usgs_gages.csv"),index_label="site_no")
 
