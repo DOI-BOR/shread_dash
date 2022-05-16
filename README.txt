@@ -36,8 +36,6 @@ Follow these steps if this is your first installation of the dashboard.
 	
 	A. Create directories
 		Create a folder "Programs" on your C: drive. Should have path: C:/Programs
-		Create a folder "shread" in Programs. Should have path: C:/Programs/shread
-		Create a folder "shread_dash" in Programs. Should have path: C:/Programs/shread_dash
 		Create a folder "shread_wd" in Programs. Should have path: C:/Programs/shread_wd
 		
 3. CLONE REPOSITORIES
@@ -46,11 +44,11 @@ Follow these steps if this is your first installation of the dashboard.
 
 	shread_dash repository:
 		URL: https://github.com/tclarkin/shread_dash
-		Local Path: C:/Programs/shread_dash
+		Local Path: C:/Programs (Should result in path: C:/Programs/shread_dash)
 		
 	shread repository:
 		URL: https://github.com/tclarkin/shread
-		Local Path: C:/Programs/shread
+		Local Path: C:/Programs (Should result in path: C:/Programs/shread)
 
 	Do one of the following for both repositories:
 

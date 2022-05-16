@@ -246,7 +246,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                 color="grey"
             ),
             line=dict(color="grey"),
-            text=round(pop12*100,0),
+            text=round(pop12,0),
             name="Precip. Prob. (%)",
             showlegend=False,
             yaxis="y1"
