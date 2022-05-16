@@ -40,20 +40,6 @@ def get_log_scale_dd(ymax):
             },
             'buttons': [
                 {
-                    'label': 'Linear Scale',
-                    'method': 'relayout',
-                    'args': ['yaxis', dict(
-                                        title='Flow (ft^3/s)',
-                                        side="left",
-                                        type="linear",
-                                        range=[1, ymax],
-                                        showline=True,
-                                        linecolor="black",
-                                        mirror=True
-                                        )
-                             ]
-                },
-                {
                     'label': 'Log Scale',
                     'method': 'relayout',
                     'args': ['yaxis', dict(
@@ -65,6 +51,20 @@ def get_log_scale_dd(ymax):
                                         linecolor="black",
                                         mirror=True
                                         )
+                             ]
+                },
+                {
+                    'label': 'Linear Scale',
+                    'method': 'relayout',
+                    'args': ['yaxis', dict(
+                        title='Flow (ft^3/s)',
+                        side="left",
+                        type="linear",
+                        range=[1, ymax],
+                        showline=True,
+                        linecolor="black",
+                        mirror=True
+                    )
                              ]
                 },
             ]
@@ -233,8 +233,8 @@ def get_flow_plot(usgs_sel, dtype, forecast_sel, start_date, end_date, csas_sel,
         yaxis=dict(
             title='Flow (ft^3/s)',
             side="left",
-            type="linear",
-            range=[1, ymax],
+            type="log",
+            range=[0.1, np.ceil(np.log10(ymax))],
             showline=True,
             linecolor="black",
             mirror=True
