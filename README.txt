@@ -1,4 +1,4 @@
-Last Updated: 2022-02-04
+Last Updated: 2022-05-27
 
 README for:
 Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py)
@@ -7,7 +7,7 @@ This repository contains a series of batch scripts and python codes to run the S
 Analysis, and Decision-making Dashboard (or "SHREAD Dash"). SHREAD plot has two main components: the database and
 the dashboard. The database relies on a series of retrieval scripts (/database/) that retrieve hydrometeorological
 data from online and store the data in local databases. Part of the retrieval process is dependent on the SHREAD
-repository (https://github.com/tclarkin/shread), The databases are built in SQLite. The dashboard is built with
+repository (https://github.com/usbr/shread), The databases are built in SQLite. The dashboard is built with
 Dash by Plotly and is configured to run locally.
 
 This repository is licensed as Creative Commons Zero (CC0). All contributions will be licensed as CC0.
@@ -43,11 +43,11 @@ Follow these steps if this is your first installation of the dashboard.
 	The repositories have the following URLs and Local Path locations:
 
 	shread_dash repository:
-		URL: https://github.com/tclarkin/shread_dash
+		URL: https://github.com/usbr/shread_dash
 		Local Path: C:/Programs (Should result in path: C:/Programs/shread_dash)
 		
 	shread repository:
-		URL: https://github.com/tclarkin/shread
+		URL: https://github.com/usbr/shread
 		Local Path: C:/Programs (Should result in path: C:/Programs/shread)
 
 	Do one of the following for both repositories:
@@ -100,9 +100,9 @@ Follow these steps if this is your first installation of the dashboard.
 			C:/Programs/shread_dash/batch_scripts/shread_ndfd_to_db.bat (line 16, 18 and 29)
 			
 		This can easily be done using Notepad++. Open all files. Hold Ctrl+H.
-			In Find What enter: C:\Users\tclarkin\AppData\Local\miniforge3
-			In Replace with enter: C:\Users\{your username}\AppData\Local\miniforge3
-			Click Replace All in All Opened Documents
+			In "Find What" enter: C:\Users\tclarkin\AppData\Local\miniforge3
+			In "Replace" with enter: C:\Users\{your username}\AppData\Local\miniforge3
+			Click "Replace All in All Opened Documents"
 			Save All.
 			
 			**Note that some of the lines will have the addition of \envs\shread or \envs\shread_env
