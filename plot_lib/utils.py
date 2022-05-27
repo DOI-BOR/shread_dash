@@ -9,6 +9,7 @@ Additional utilities used in multiple scripts for shread_dash.py
 
 import time
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import dash
 from database import db
