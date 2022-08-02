@@ -16,6 +16,7 @@ import sqlite3
 import sqlalchemy as sql
 import zipfile
 from zipfile import ZipFile
+import datetime as dt
 from requests import get as r_get
 from io import StringIO
 
@@ -148,40 +149,38 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
         if verbose:
             print(f'Processing {dtype} data...')
 
-        if dtype == "iv":
-            ext = "Hourly.php"
-        if dtype == "dv":
-            ext = "Daily.php"
-
         for site in csas_sites:
             if verbose:
                 print(f'for {site}...')
 
+            # Set filepath extension for dtype
+            if dtype == "iv":
+                ext = "hourly-data"
+            if dtype == "dv":
+                ext = "daily-data"
+
+            # Convert site acronyms to names
+            if site == "SBSP":
+                site = "senator-beck-study-plot"
+            if site == "SASP":
+                site = "swamp-angel-study-plot"
+            if site == "PTSP":
+                site = "putney-study-plot"
+            if site == "SBSG":
+                site = "senator-beck-stream-gauge"
+
             # Construct url
-            site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
+            site_url = f"https://www.snowstudies.org/{site}-full-{ext}/"
             print(site_url)
 
             # Import
             failed = True
             tries = 0
-            while failed:
-                try:
-                    csv_str = r_get(site_url,timeout=None,verify=False).text
-                    failed = False
-                except TimeoutError:
-                    raise Exception("Timeout; Data unavailable?")
-                    tries += 1
-                    print(tries)
-                    if tries > 15:
-                        return
+            df_in = None
+            f = pd.read_html(site_url)
 
-            csv_io = StringIO(csv_str)
-            try:
-                f = pd.read_html(csv_io)
-            except ValueError:
-                return
-
-            df_in = f[1]
+            df_in = f[0]
+            print(df_in)
             if df_in.empty:
                 if verbose:
                     print("Data not available")
@@ -191,10 +190,16 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
                     print("Data not available")
                     return
 
+            if "Year" not in df_in.columns:
+                df_in["Year"] = dt.datetime.now().year
+
+            if "DOY" not in df_in.columns:
+                df_in["DOY"] = df_in.Day
+
             if dtype == "dv":
-                dates = compose_date(years=df_in.Year,days=df_in.Day)
+                dates = compose_date(years=df_in.Year,days=df_in.DOY)
             if dtype == "iv":
-                dates = compose_date(years=df_in.Year, days=df_in.Day,hours=df_in.Hour/100)
+                dates = compose_date(years=df_in.Year, days=df_in.DOY,hours=df_in.Hour/100)
 
             df_out = pd.DataFrame(index=df_in.index,
                                   columns=["site","type","albedo","snwd","temp","flow"])

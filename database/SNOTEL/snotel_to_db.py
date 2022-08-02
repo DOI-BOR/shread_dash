@@ -36,7 +36,7 @@ COL_TYPES = {
 }
 
 # Define functions
-def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False,):
+def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False):
     """Download NRCS SNOTEL data
 
     Parameters
@@ -61,16 +61,19 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
         if verbose == True:
             print("Importing {} data".format(var))
         site_url = "https://www.nrcs.usda.gov/Internet/WCIS/sitedata/" + ext + "/" + var + "/" + site_triplet + ".json"
+        if verbose == True:
+            print(site_url)
         failed = True
         tries = 0
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=30).text
+                csv_str = r_get(site_url, timeout=1).text
                 failed = False
-            except TimeoutError:
+            except ConnectionError:
                 raise Exception("Timeout; Data unavailable?")
                 tries += 1
-                if tries > 4:
+                print(tries)
+                if tries > 10:
                     return
             if "not found on this server" in csv_str:
                 print("Site URL incorrect.")

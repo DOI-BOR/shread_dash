@@ -60,9 +60,9 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
         tries = 0
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=5).text
+                csv_str = r_get(site_url, timeout=1).text
                 failed = False
-            except TimeoutError:
+            except ConnectionError:
                 raise Exception("Timeout; Data unavailable?")
                 tries += 1
                 if tries > 4:
@@ -147,40 +147,45 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
     # Set filepath extension for dtype
 
     if dtype == "iv":
-        ext = "Hourly.php"
+        ext = "hourly-data"
     if dtype == "dv":
-        ext = "Daily.php"
+        ext = "daily-data"
 
-    site_url = "https://www.snowstudies.info/NRTData/" + site + "Full" + ext
+    # Convert site acronyms to names
+    if site == "SBSP":
+        site = "senator-beck-study-plot"
+    if site == "SASP":
+        site = "swamp-angel-study-plot"
+    if site == "PTSP":
+        site = "putney-study-plot"
+    if site == "SBSG":
+        site = "senator-beck-stream-gauge"
 
+    site_url = f"https://www.snowstudies.org/{site}-full-{ext}/"
+
+    # Import
     failed = True
     tries = 0
-    while failed:
-        try:
-            csv_str = r_get(site_url, timeout=None,verify=True).text
-            failed = False
-        except TimeoutError:
-            raise Exception("Timeout; Data unavailable?")
-            tries += 1
-            if tries > 10:
-                return
+    df_in = None
+    f = pd.read_html(site_url)
 
-    csv_io = StringIO(csv_str)
-    try:
-        f = pd.read_html(csv_io)
-    except ValueError:
-        return
+    csas_in = f[0]
 
-    csas_in = f[1]
     if csas_in.empty:
         return pd.DataFrame(columns=["snwd","temp","flow","albedo"])
     if csas_in is None:
         return pd.DataFrame(columns=["snwd","temp","flow","albedo"])
 
+    if "Year" not in csas_in.columns:
+        csas_in["Year"] = dt.datetime.now().year
+
+    if "DOY" not in csas_in.columns:
+        csas_in["DOY"] = csas_in.Day
+
     if dtype == "dv":
-        dates = compose_date(years=csas_in.Year,days=csas_in.Day)
+        dates = compose_date(years=csas_in.Year,days=csas_in.DOY)
     if dtype == "iv":
-        dates = compose_date(years=csas_in.Year, days=csas_in.Day,hours=csas_in.Hour/100)
+        dates = compose_date(years=csas_in.Year, days=csas_in.DOY,hours=csas_in.Hour/100)
 
     csas_df = pd.DataFrame()
 
