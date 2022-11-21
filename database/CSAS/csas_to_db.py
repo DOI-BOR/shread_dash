@@ -161,16 +161,16 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
 
             # Convert site acronyms to names
             if site == "SBSP":
-                site = "senator-beck-study-plot"
+                site_str = "senator-beck-study-plot"
             if site == "SASP":
-                site = "swamp-angel-study-plot"
+                site_str = "swamp-angel-study-plot"
             if site == "PTSP":
-                site = "putney-study-plot"
+                site_str = "putney-study-plot"
             if site == "SBSG":
-                site = "senator-beck-stream-gauge"
+                site_str = "senator-beck-stream-gauge"
 
             # Construct url
-            site_url = f"https://www.snowstudies.org/{site}-full-{ext}/"
+            site_url = f"https://www.snowstudies.org/{site_str}-full-{ext}/"
             print(site_url)
 
             # Import
@@ -180,7 +180,7 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
             f = pd.read_html(site_url)
 
             df_in = f[0]
-            print(df_in)
+            #print(df_in)
             if df_in.empty:
                 if verbose:
                     print("Data not available")

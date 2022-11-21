@@ -67,7 +67,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
         tries = 0
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=1).text
+                csv_str = r_get(site_url, timeout=1,verify=False).text
                 failed = False
             except ConnectionError:
                 raise Exception("Timeout; Data unavailable?")
@@ -75,6 +75,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
                 print(tries)
                 if tries > 10:
                     return
+
             if "not found on this server" in csv_str:
                 print("Site URL incorrect.")
                 return

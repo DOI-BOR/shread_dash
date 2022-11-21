@@ -51,19 +51,31 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
             os.mkdir(data_dir)
 
     # Correct dtype and dates
+    if (end is None) or (pd.to_datetime(end) >= dt.datetime.now()):
+        enddt = dt.datetime.now()
+        end = enddt.strftime("%Y-%m-%d")
+        currentyear = int(end[:4])
+
     if dtype == "dv":
         parameter = "00060_Mean"
         if start is None:
-            start = "2022-01-01"
+            start = f"{currentyear-1}-10-01"
         nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S+00:00")
     elif dtype == "iv":
         parameter = "00060"
         if start is None:
-            start = "2022-03-14"
+            if (enddt > dt.datetime.strptime(f"{currentyear}-11-07","%Y-%m-%d")):
+                start = f"{currentyear}-11-07"
+            elif (enddt < dt.datetime.strptime(f"{currentyear}-03-08","%Y-%m-%d")):
+                start = f"{currentyear-1}-11-07"
+            elif (enddt > dt.datetime.strptime(f"{currentyear}-03-14","%Y-%m-%d")) and (enddt < dt.datetime.strptime(f"{currentyear}-11-01","%Y-%m-%d")):
+                start = f"{currentyear}-03-14"
+            else:
+                start = end
+
         nd_start = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S-06:00")
 
-    if (end is None) or (pd.to_datetime(end) >= dt.datetime.now()):
-        end = dt.datetime.now().strftime("%Y-%m-%d")
+
 
     # Import data
     try:
