@@ -67,7 +67,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
         tries = 0
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=1,verify=True).text
+                csv_str = r_get(site_url, timeout=0.25,verify=True).text
                 failed = False
             except ConnectionError:
                 raise Exception("Timeout; Data unavailable?")
@@ -311,6 +311,7 @@ if __name__ == '__main__':
     snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"))
 
     for site_triplet in snotel_sites.triplet:
+        print(site_triplet)
         import_snotel(site_triplet)
 
     # Arguments for db build

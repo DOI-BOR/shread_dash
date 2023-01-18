@@ -177,7 +177,10 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
             failed = True
             tries = 0
             df_in = None
-            f = pd.read_html(site_url)
+            try:
+                f = pd.read_html(site_url)
+            except ImportError:
+                continue
 
             df_in = f[0]
             #print(df_in)
