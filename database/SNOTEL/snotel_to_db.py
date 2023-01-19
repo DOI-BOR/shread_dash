@@ -19,6 +19,8 @@ import sqlalchemy as sql
 import zipfile
 from zipfile import ZipFile
 from requests import get as r_get
+from requests.exceptions import ReadTimeout
+from urllib3.exceptions import ReadTimeoutError
 from io import StringIO
 
 # Load directories and defaults
@@ -65,20 +67,22 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
             print(site_url)
         failed = True
         tries = 0
+        csv_str = ""
         while failed:
             try:
                 csv_str = r_get(site_url, timeout=0.25,verify=True).text
                 failed = False
-            except ConnectionError:
-                raise Exception("Timeout; Data unavailable?")
+            except (ConnectionError, TimeoutError,ReadTimeout,ReadTimeoutError) as error:
+                print(f"{error}")
                 tries += 1
-                print(tries)
-                if tries > 10:
-                    return
+                if tries <= 10:
+                    print(f"After {tries} tries, retrying...")
+                else:
+                    continue
 
             if "not found on this server" in csv_str:
                 print("Site URL incorrect.")
-                return
+                continue
 
         csv_io = StringIO(csv_str)
         f = pd.read_json(csv_io, orient="index")

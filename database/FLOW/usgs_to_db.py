@@ -82,7 +82,7 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
         data = nwis.get_record(sites=site, start=start, end=end, service=dtype, parameterCd="00060")
     except ValueError:
         data = pd.DataFrame(columns=COL_TYPES.keys())
-        data.loc[0,:] = [nd_start,np.nan,site,f"usgs_{dtype}"]
+        data.loc[0,:] = [nd_start,-1,site,f"usgs_{dtype}"]
         if data_dir is None:
             return(data)
         else:
@@ -91,7 +91,7 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
 
     if data.empty:
         data = pd.DataFrame(columns=COL_TYPES.keys())
-        data.loc[0,:] = [nd_start,np.nan,site,f"usgs_{dtype}"]
+        data.loc[0,:] = [nd_start,-1,site,f"usgs_{dtype}"]
         if data_dir is None:
             return(data)
         else:
@@ -99,8 +99,8 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
             return
 
     # Prepare output with standard index
-    #if dtype=="iv":
-    #    data.index = pd.to_datetime(data.index,utc=True)
+    if dtype=="iv":
+        data.index = pd.to_datetime(data.index,utc=True)
 
     start_date = data.index.min()
     end_date = data.index.max()
@@ -108,13 +108,17 @@ def import_nwis(site,start=None,end=None,dtype="dv",data_dir=None):
     if dtype == "dv":
         date_index = pd.date_range(start_date, end_date, freq="D")
     elif dtype == "iv":
-        date_index = pd.date_range(start_date, end_date,freq="15T")
+        date_index = pd.to_datetime(pd.date_range(start_date, end_date,freq="15T",tz="utc"))
 
     out = pd.DataFrame(index=date_index)
     out["flow"] = out.merge(data[parameter], left_index=True, right_index=True, how="left")
 
     # Correct errors
-    out.loc[out["flow"]<0,"flow"] = np.nan
+    out.loc[out["flow"]<0,"flow"] = -1
+    out.loc[out["flow"]=="Ice","flow"] = -1
+    out.loc[out["flow"].isnull(),"flow"] = -1
+    out.loc[out["flow"].isna(),"flow"] = -1
+
 
     if data_dir is None:
         return(out)
@@ -336,6 +340,8 @@ if __name__ == '__main__':
     df_usgs_iv = df_dict['usgs_iv']
 
     for df in [df_usgs_dv,df_usgs_iv]:
+        df["date"] = pd.to_datetime(df["date"],utc=True)
+
         write_db(
             df,
             if_exists=args.exists,

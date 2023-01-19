@@ -1,9 +1,5 @@
 @ECHO OFF
-set /p ndfd="Update NDFD (can take up to 2 hours) (Y/N)? "
-
-if NOT %ndfd%==Y (
-	EXIT
-)
+set /p sky="Update sky (can take over 2 hours; 1.5 hours without sky) (Y/N)? "
 
 TITLE Removing previous files...
 set shread_dir=C:\Programs\
@@ -14,7 +10,7 @@ del ndfd*.csv
 del *.bin
 mkdir %shread_dir%\shread_wd\data\working\ndfd
 cd %shread_dir%\shread_wd\data\working\ndfd
-del *
+del * /q
 
 TITLE Loading python environment...
 set root=C:\Users\tclarkin\AppData\Local\miniforge3
@@ -24,11 +20,21 @@ call activate %env%
 
 cd %shread_dir%shread_wd\
 TITLE Running shread...
-@ECHO ON
 set start=%time%
-call python %shread_dir%shread/shread.py -i shread_config_shread_dash.ini -s 20220101 -e 20220101 -t D -p ndfd
-@ECHO OFF
 
+if %sky%==Y GOTO sky 
+if %sky%==y GOTO sky
+if %sky%==Yes GOTO sky
+if %sky%==yes GOTO sky
+if %sky%==YES GOTO sky
+GOTO nosky
+:sky
+	call python %shread_dir%shread/shread.py -i %shread_dir%shread/config/shread_config_shread_dash.ini -s 20220101 -e 20220101 -t D -p ndfd
+	GOTO db
+:nosky
+	call python %shread_dir%shread/shread.py -i %shread_dir%shread/config/shread_config_shread_dash_nosky.ini -s 20220101 -e 20220101 -t D -p ndfd
+
+:db
 TITLE Updating DB with new data...
 set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
@@ -43,3 +49,5 @@ pause
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
 pushd %THIS_DIR%
+
+ndfd_parameters = mint,maxt,rhm,pop12,qpf,snow,sky
