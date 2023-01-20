@@ -11,13 +11,13 @@ if %all%==YES GOTO all
 GOTO postbatch
 
 :batch
-	#start batch_scripts\shread_snow_to_db.bat
-	#start batch_scripts\shread_ndfd_to_db.bat
-	#start batch_scripts\csas_to_db.bat
-	#start batch_scripts\update_dust.bat
-	#start batch_scripts\rfc_to_db.bat
-	#start batch_scripts\usgs_to_db.bat
-	#start batch_scripts\snotel_to_db.bat
+	start batch_scripts\shread_snow_to_db.bat
+	start batch_scripts\shread_ndfd_to_db.bat
+	start batch_scripts\csas_to_db.bat
+	start batch_scripts\update_dust.bat
+	start batch_scripts\rfc_to_db.bat
+	start batch_scripts\usgs_to_db.bat
+	start batch_scripts\snotel_to_db.bat
 	pause
 	exit
 :postbatch
