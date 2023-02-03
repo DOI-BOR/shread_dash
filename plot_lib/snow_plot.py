@@ -163,10 +163,10 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
                     ba_ndfd = ba_stats_std(df, "Date")
                     ba_ndfd = ba_ndfd.tz_localize(tz="utc")
 
-                    if sensor!="qpf":
-                        ba_ndfd = ba_ndfd['mean'].resample(step).mean()
-                    else:
-                        ba_ndfd = ba_ndfd['mean'].resample(step).sum()
+                    #if sensor!="qpf":
+                    ba_ndfd = ba_ndfd['mean'].resample(step).mean()
+                    #else:
+                    #    ba_ndfd = ba_ndfd['mean'].resample(step).sum()
 
                     ndfd = pd.DataFrame(index=dates)
 
@@ -174,7 +174,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
                         sky = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
 
                     if sensor == "snow":
-                        snow = ndfd.merge(ba_ndfd-1,left_index=True,right_index=True,how="left")
+                        snow = ndfd.merge(ba_ndfd,left_index=True,right_index=True,how="left")
 
                     if sensor == "rhm":
                         rhm = ndfd.merge(ba_ndfd, left_index=True, right_index=True, how="left")

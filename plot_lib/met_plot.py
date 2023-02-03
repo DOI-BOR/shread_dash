@@ -135,10 +135,10 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
                     ba_ndfd = ba_stats_std(df, "Date")
                     ba_ndfd = ba_ndfd.tz_localize(tz="utc")
 
-                    if sensor!="qpf":
-                        ba_ndfd = ba_ndfd['mean'].resample(step).mean()
-                    else:
-                        ba_ndfd = ba_ndfd['mean'].resample(step).sum()
+                    #if sensor!="qpf":
+                    ba_ndfd = ba_ndfd['mean'].resample(step).mean()
+                    #else:
+                    #    ba_ndfd = ba_ndfd['mean'].resample(step).sum()
 
                     ndfd = pd.DataFrame(index=dates)
 
@@ -207,7 +207,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
             marker_color="black",
             text="NWS QPF (in)",
             showlegend=True,
-            name="NWS Mean Snow Forecast for selection",
+            name="NWS Mean Precip Forecast for selection",
             yaxis="y2"
         ))
 
