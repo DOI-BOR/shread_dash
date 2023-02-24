@@ -255,7 +255,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
     fig.add_trace(shade_forecast(ymax))
 
     fig.update_layout(
-        margin={'l': 40, 'b': 40, 't': 0, 'r': 40},
+        margin={'l': 40, 'b': 40, 't': 0, 'r': 45},
         height=400,
         legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(255,255,255,0.8)'},
         hovermode='closest',

@@ -427,7 +427,7 @@ def disable_forecast(end_date):
     Output('slopes', 'value'),
     input_options
 )
-def load_presets(a,b,c,d,e):
+def load_presets(a,b,c,d,e,f):
     """
     :description: this function applies user specified presets based on dropdown menu clicks
     :return: user specified presets, as defined below.

@@ -272,7 +272,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
             linecolor = "black",
             mirror = True
         ),
-        margin={'l': 40, 'b': 40, 't': 10, 'r': 45},
+        margin={'l': 40, 'b': 40, 't': 0, 'r': 45},
         height=400,
         legend={'x': 0, 'y': 1, 'bgcolor': 'rgba(255,255,255,0.8)'},
         hovermode='closest',
