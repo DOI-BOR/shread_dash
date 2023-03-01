@@ -27,7 +27,7 @@ def get_basin_stats(snodas_df,stype="swe"):
     snodas_unique = snodas_df[snodas_df["Date"]==last_date]
     mean_el = round(snodas_unique["elev_ft"].mean(),0)
     points = len(snodas_unique)
-    area = round(points * 0.386102, 0)
+    area = round(points * 0.216, 0) # points do not correspond to 1 sq km (0.38 sq mi), they are closer to 0.21 sq mi.
 
     if stype=="swe":
         mean_ft = snodas_unique["mean"].mean()/12
