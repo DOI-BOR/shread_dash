@@ -7,7 +7,12 @@ call activate %env%
 call :GET_THIS_DIR
 call chdir %THIS_DIR%
 set PYTHONPATH=%THIS_DIR%
+
+start "" http://127.0.0.1:5000/
+
 python shread_dash.py
+
+
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
