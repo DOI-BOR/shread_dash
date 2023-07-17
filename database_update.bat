@@ -46,7 +46,7 @@ if %snodas%==yes GOTO snodas
 if %snodas%==YES GOTO snodas
 GOTO postsnodas
 :snodas
-	start batch_scripts\shread_snow_to_db.bat
+	start batch_scripts\shread_snow_to_db_dayopt.bat
 :postsnodas
 
 set /p ndfd="Update NDFD (can take up to 2 hours) (Y/N)? "

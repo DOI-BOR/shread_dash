@@ -5,9 +5,11 @@ call %root%\Scripts\activate.bat
 set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread
 call activate %env%
 
-TITLE Set dates for SHREAD Import...
-set /p sdate="Start Date (YYYYMMDD): "
-set /p edate="End Date (YYYYMMDD): "
+TITLE Importing last 10 days...
+
+set sdate=10
+set edate=TODAY
+
 set shread_dir=C:\Programs\
 cd %shread_dir%shread_wd\
 TITLE Running shread...
