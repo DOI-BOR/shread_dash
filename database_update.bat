@@ -1,26 +1,42 @@
 @ECHO OFF
 TITLE "Preparing to update databases"
 
-set /p all="Update ALL (Y/N)? "
+set /p all="Update type? (FULL, RAPID, or CUSTOM) "
 
-if %all%==Y GOTO batch 
-if %all%==y GOTO batch
-if %all%==Yes GOTO all
-if %all%==yes GOTO all
-if %all%==YES GOTO all
-GOTO postbatch
+if %all%==full GOTO full 
+if %all%==Full GOTO full
+if %all%==FULL GOTO full
+if %all%==f GOTO full
+if %all%==F GOTO full
+GOTO postfull
 
-:batch
+:full
 	start batch_scripts\shread_snow_to_db.bat
-	start batch_scripts\shread_ndfd_to_db_nosky.bat
+	start batch_scripts\shread_ndfd_to_db.bat
 	start batch_scripts\csas_to_db.bat
 	start batch_scripts\update_dust.bat
 	start batch_scripts\rfc_to_db.bat
 	start batch_scripts\usgs_to_db.bat
 	start batch_scripts\snotel_to_db.bat
-	pause
 	exit
-:postbatch
+:postfull
+
+if %all%==rapid GOTO rapid 
+if %all%==RAPID GOTO rapid
+if %all%==Rapid GOTO rapid
+if %all%==R GOTO rapid
+if %all%==r GOTO rapid
+GOTO postrapid
+
+:rapid
+	start batch_scripts\shread_ndfd_to_db_nosky.bat
+	start batch_scripts\csas_to_db.bat
+	start batch_scripts\rfc_to_db.bat
+	start batch_scripts\usgs_to_db.bat
+	start batch_scripts\snotel_to_db.bat
+	exit
+:postrapid
+
 
 set /p snodas="Update SNODAS (Y/N)? "
 if %snodas%==Y GOTO snodas
@@ -41,7 +57,7 @@ if %ndfd%==yes GOTO ndfd
 if %ndfd%==YES GOTO ndfd
 GOTO postndfd
 :ndfd
-	start batch_scripts\shread_ndfd_to_db_nosky.bat
+	start batch_scripts\shread_ndfd_to_db_skyopt.bat
 :postndfd
 
 set /p csas="Update CSAS (Y/N)? "
