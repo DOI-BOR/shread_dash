@@ -99,5 +99,4 @@ GOTO postsnotel
 	start batch_scripts\snotel_to_db.bat
 :postsnotel
 
-pause
 exit

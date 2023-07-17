@@ -10,7 +10,17 @@ set start=%time%
 python C:\Programs\shread_dash\database\FLOW\usgs_to_db.py
 echo process began at %start%
 echo process complete at %time%
-pause
+
+if %ERRORLEVEL%==0 GOTO success
+GOTO fail
+
+:fail
+	echo "Update error...please rerun"
+	pause
+:success
+	echo process began at %start%
+	echo process complete at %time%
+	exit
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0

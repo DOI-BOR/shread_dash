@@ -24,9 +24,17 @@ cd %shread_dir%shread_dash\database\SHREAD\
 @ECHO ON
 python shread_snow_to_db.py
 @ECHO OFF
-echo process began at %start%
-echo process complete at %time%
-pause
+
+if %ERRORLEVEL%==0 GOTO success
+GOTO fail
+
+:fail
+	echo "Update error...please rerun"
+	pause
+:success
+	echo process began at %start%
+	echo process complete at %time%
+	exit
 
 :GET_THIS_DIR
 set THIS_DIR=%~dp0
