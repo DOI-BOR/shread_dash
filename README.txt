@@ -91,13 +91,7 @@ Follow these steps if this is your first installation of the dashboard.
 	C. Configure bat files
 		Open the following files with a text editor and make sure the path to miniconda is correct.
 			C:/Programs/shread_dash/dasboard_deploy.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/csas_to_db.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/rfc_to_db.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/usgs_to_db.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/snotel_to_db.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/update_dust.bat (line 3 and 5)
-			C:/Programs/shread_dash/batch_scripts/shread_snow_to_db.bat (line 3, 5 and 20)
-			C:/Programs/shread_dash/batch_scripts/shread_ndfd_to_db.bat (line 16, 18 and 29)
+			All files in C:/Programs/shread_dash/batch_scripts/
 			
 		This can easily be done using Notepad++. Open all files. Hold Ctrl+H.
 			In "Find What" enter: C:\Users\tclarkin\AppData\Local\miniforge3
@@ -115,7 +109,8 @@ Follow these steps if this is your first installation of the dashboard.
 
 	B. Deploy dashboard
 		Double click on C:/Programs/shread_dash/dashboard_deploy.bat
-		Follow prompts (open http://127.0.0.1:5000/ in browser)
+		This will open the browser to the dashboard webpage
+		If this does not, navigate to http://127.0.0.1:5000/ in browser
 
 
 >> INTERMEDIATE UPDATES <<
@@ -157,5 +152,18 @@ If you have already installed and configured everything for shread plot, but nee
 		Update shread environment:
 			> conda env update -f environment.yml
 
+>> SCHEDULED DATABASE UPDATES <<
+If you would like the database to be updated automatically, do the following:
+
+1. Open the Task Scheduler app on Windows
+2. Select "Create Task"
+	A. Under General, give the task a name, leave all other settings
+	B. Under Triggers, select "New", set to a "Daily" schedule to run at your desired time (recommend 4AM)
+	C. Under Actions, select "New", leave action on "Start a program", set Program/script to:
+		"C:/C:\Programs\shread_dash\batch_scripts/database_update_full.bat"
+	D. Under Conditions, check "Start only if the following network connection is available"
+		Leave on "Any connection"
+	E. Click "Ok"
+3. The task should now run on your desired schedule, as long as you are logged on and connected to the internet
 
 
