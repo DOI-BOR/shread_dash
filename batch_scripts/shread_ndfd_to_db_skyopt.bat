@@ -3,12 +3,12 @@ set /p sky="Update sky (can take over 2 hours; 1.5 hours without sky) (Y/N)? "
 
 TITLE Removing previous files...
 set shread_dir=C:\Programs\
-mkdir %shread_dir%\shread_dash\database\SHREAD\data
+mkdir -p %shread_dir%\shread_dash\database\SHREAD\data
 cd %shread_dir%\shread_dash\database\SHREAD\data
 del ndfd*.tif
 del ndfd*.csv
 del *.bin
-mkdir %shread_dir%\shread_wd\data\working\ndfd
+mkdir -p %shread_dir%\shread_wd\data\working\ndfd
 cd %shread_dir%\shread_wd\data\working\ndfd
 del * /q
 
