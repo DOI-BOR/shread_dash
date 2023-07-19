@@ -9,7 +9,7 @@ del ndfd*.csv
 del *.bin
 mkdir -p %shread_dir%\shread_wd\data\working\ndfd
 cd %shread_dir%\shread_wd\data\working\ndfd
-del *
+del * /q
 
 TITLE Loading python environment...
 set root=C:\Users\tclarkin\AppData\Local\miniforge3
