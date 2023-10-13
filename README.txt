@@ -160,7 +160,7 @@ If you would like the database to be updated automatically, do the following:
 	A. Under General, give the task a name, leave all other settings
 	B. Under Triggers, select "New", set to a "Daily" schedule to run at your desired time (recommend 4AM)
 	C. Under Actions, select "New", leave action on "Start a program", set Program/script to:
-		"C:/C:\Programs\shread_dash\batch_scripts/database_update_full.bat"
+		"C:\Programs\shread_dash\batch_scripts/database_update_full.bat"
 	D. Under Conditions, check "Start only if the following network connection is available"
 		Leave on "Any connection"
 	E. Click "Ok"
