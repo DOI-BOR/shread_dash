@@ -87,6 +87,7 @@ def get_navbar():
                         children=
                         [
                             dbc.DropdownMenuItem("Now", id="set_now"),
+                            dbc.DropdownMenuItem("2023", id="2023_window"),
                             dbc.DropdownMenuItem("2022", id="2022_window"),
                             dbc.DropdownMenuItem("2021", id="2021_window"),
                         ],
@@ -460,10 +461,11 @@ def load_presets(a,b,c,d,e,f):
     [Input('set_now', 'n_clicks'),
      Input('2021_window', 'n_clicks'),
      Input('2022_window', 'n_clicks'),
+     Input('2023_window', 'n_clicks'),
      State('date_selection', 'start_date'),
      State('date_selection', 'end_date')]
 )
-def load_preset_dates(a,b,c,start,end):
+def load_preset_dates(a,b,c,d,start,end):
     """
     :description: this function applies user specified dates based on dropdown menu clicks
     :return: user specified dates
@@ -475,6 +477,9 @@ def load_preset_dates(a,b,c,start,end):
         end_date = "2021-07-01"
     elif '2022_window' in changed_id:
         start_date = "2021-11-01"
+        end_date = dt.datetime.now().date() + dt.timedelta(days=10)
+    elif '2023_window' in changed_id:
+        start_date = "2022-11-01"
         end_date = dt.datetime.now().date() + dt.timedelta(days=10)
     else:
         start_date = dt.datetime.now().date() - dt.timedelta(days=10)

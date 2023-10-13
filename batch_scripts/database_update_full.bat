@@ -8,4 +8,8 @@ start C:\Programs\shread_dash\batch_scripts\update_dust.bat
 start C:\Programs\shread_dash\batch_scripts\rfc_to_db.bat
 start C:\Programs\shread_dash\batch_scripts\usgs_to_db.bat
 start C:\Programs\shread_dash\batch_scripts\snotel_to_db.bat
-exit
+
+set start=%time%
+echo process began at %start%
+
+pause
