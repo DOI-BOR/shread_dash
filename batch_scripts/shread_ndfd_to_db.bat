@@ -2,12 +2,12 @@
 
 TITLE Removing previous files...
 set shread_dir=C:\Programs\
-mkdir -p %shread_dir%\shread_dash\database\SHREAD\data
+mkdir %shread_dir%\shread_dash\database\SHREAD\data
 cd %shread_dir%\shread_dash\database\SHREAD\data
 del ndfd*.tif
 del ndfd*.csv
 del *.bin
-mkdir -p %shread_dir%\shread_wd\data\working\ndfd
+mkdir %shread_dir%\shread_wd\data\working\ndfd
 cd %shread_dir%\shread_wd\data\working\ndfd
 del * /q
 
