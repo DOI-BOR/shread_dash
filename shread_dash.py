@@ -640,8 +640,8 @@ def update_csas_plot(start_date, end_date, plot_dust, csas_sel, dtype, albedo,of
 
 ### LAUNCH DASHBOARD ###
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.server.run(debug=False)
+    port = int(os.environ.get('PORT',5001))
+    app.server.run(debug=True,port=5001)
 
     @app.after_request
     def after_request(response):
