@@ -67,7 +67,7 @@ def get_met_plot(basin, elrange, aspects, slopes, start_date,
             if offline:
                 snotel_in = screen_snotel(f"snotel_{s}", start_date, end_date)
             else:
-                snotel_in = import_snotel(s, start_date, end_date, vars=["TAVG", "PREC"])
+                snotel_in = import_snotel(s,snotel_sites,vars=["TAVG", "PREC"])
 
             # Merge and add to temp and precip df
             snotel_t_in = snotel_t_df.merge(snotel_in["TAVG"], left_index=True, right_index=True, how="left")

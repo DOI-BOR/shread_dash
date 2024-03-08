@@ -38,12 +38,12 @@ COL_TYPES = {
 }
 
 # Define functions
-def import_snotel(site_duet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False):
+def import_snotel(site_triplet,snotel_sites,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False):
     """Download NRCS SNOTEL data
 
     Parameters
     ---------
-        site_duet: site_name+state
+        site_triplet: three part SNOTEL triplet (e.g., 713_CO_SNTL)
         vars: array of variables for import (tested with WTEQ, SNWD, PREC, TAVG..other options may be available)
         out_dir: str to directory to save .csv...if None, will return df
         verbose: boolean
@@ -55,8 +55,8 @@ def import_snotel(site_duet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAUL
 
     """
     # Convert name to string, replacing spaces with %20
-    name = site_duet.split("+")[0].title().replace(" ", "%20")
-    state = site_duet.split("+")[1]
+    name = snotel_sites.loc[snotel_sites.triplet==site_triplet,"name"].item().title().replace(" ", "%20")
+    state = snotel_sites.loc[snotel_sites.triplet==site_triplet,"state"].item()
 
     # Create dictionary of variables
     snotel_dict = dict()
@@ -144,7 +144,7 @@ def import_snotel(site_duet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAUL
 
     dates = pd.date_range(begin,end,freq="D",tz='UTC')
     data = pd.DataFrame(index=dates)
-    data["site"] = site_duet
+    data["site"] = site_triplet
 
     if verbose == True:
         print("Preparing output")
@@ -160,7 +160,7 @@ def import_snotel(site_duet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAUL
     else:
         if os.path.isdir(out_dir) is False:
             os.mkdir(out_dir)
-        data.to_csv(Path(out_dir,f"{site_duet}.csv"),index_label="date")
+        data.to_csv(Path(out_dir,f"{site_triplet}.csv"),index_label="date")
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     """
@@ -322,12 +322,11 @@ if __name__ == '__main__':
     import argparse
 
     # Identify SNOTEL sites:
-    snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"),index_col=0)
+    snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"))
 
-    for site in snotel_sites.index:
-        site_duet = f"{snotel_sites.loc[site,'name']}+{snotel_sites.loc[site,'state']}"
-        print(site_duet)
-        import_snotel(site_duet)
+    for site_triplet in snotel_sites.triplet:
+        print(site_triplet)
+        import_snotel(site_triplet,snotel_sites)
 
     # Arguments for db build
     args = parse_args()

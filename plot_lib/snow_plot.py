@@ -109,7 +109,7 @@ def get_snow_plot(basin, stype, elrange, aspects, slopes, start_date,
         if offline:
             snotel_in = screen_snotel(f"snotel_{s}", start_date, end_date)
         else:
-            snotel_in = import_snotel(s, start_date, end_date, vars=[slabel])
+            snotel_in = import_snotel(s,snotel_sites,vars=[slabel])
         snotel_in = snotel_s_df.merge(snotel_in[slabel], left_index=True, right_index=True, how="left")
         snotel_s_df.loc[:, s] = snotel_in[slabel]
 

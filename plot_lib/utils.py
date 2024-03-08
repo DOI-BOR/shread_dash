@@ -20,16 +20,15 @@ from requests.exceptions import ReadTimeout
 from io import StringIO
 
 # Function for importing data
-def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC","TAVG"],dtype="dv",verbose=False):
+
+def import_snotel(site_triplet,snotel_sites,vars=["WTEQ", "SNWD", "PREC", "TAVG"],verbose=False):
     """Download NRCS SNOTEL data
 
     Parameters
     ---------
         site_triplet: three part SNOTEL triplet (e.g., 713_CO_SNTL)
-        start_date: datetime
-        end_date: datetime
         vars: array of variables for import (tested with WTEQ, SNWD, PREC, TAVG..other options may be available)
-        dtype: str (only daily, dv, supported)
+        out_dir: str to directory to save .csv...if None, will return df
         verbose: boolean
             True : enable print during function run
 
@@ -38,83 +37,109 @@ def import_snotel(site_triplet, start_date, end_date, vars=["WTEQ","SNWD","PREC"
         dataframe
 
     """
-    # Set filepath extension for dtype
-    if dtype == "dv":
-        ext = "DAILY"
-    if dtype == "iv":
-        ext = "DAILY"
+    # Convert name to string, replacing spaces with %20
+    name = snotel_sites.loc[snotel_sites.triplet==site_triplet,"name"].item().title().replace(" ", "%20")
+    state = snotel_sites.loc[snotel_sites.triplet==site_triplet,"state"].item()
 
-    # TODO: basinaverage data
-    # TODO: soil moisture
-
-    # Create output index and dataframe
-    dates = pd.date_range(start_date, end_date, freq="D", tz='UTC')
-    data = pd.DataFrame(index=dates)
+    # Create dictionary of variables
+    snotel_dict = dict()
+    ext = "DAILY"
 
     # Cycle through variables
     for var in vars:
-        if verbose==True:
+        if verbose == True:
             print("Importing {} data".format(var))
-        site_url = "https://www.nrcs.usda.gov/Internet/WCIS/sitedata/" + ext + "/" + var + "/" + site_triplet + ".json"
+        site_url = f"https://nwcc-apps.sc.egov.usda.gov/awdb/site-plots/POR/{var}/{state}/{name}.csv"
+        print(site_url)
+        if verbose == True:
+            print(site_url)
         failed = True
         tries = 0
+        csv_str = ""
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=1).text
+                csv_str = r_get(site_url, timeout=5,verify=True).text
                 failed = False
-            except ConnectionError:
-                raise Exception("Timeout; Data unavailable?")
+            except (ConnectionError, TimeoutError,ReadTimeout,ReadTimeoutError) as error:
+                print(f"{error}")
                 tries += 1
-                if tries > 4:
-                    return
-            if "not found on this server" in csv_str:
-                print("Site URL incorrect.")
-                return
-
-        csv_io = StringIO(csv_str)
-        f = pd.read_json(csv_io, orient="index")
-
-        # Create index of dates for available data for current site
-        json_index = pd.date_range(f.loc["beginDate"].item(), f.loc["endDate"].item(), freq="D", tz='UTC')
-        # Create dataframe of available data (includes Feb 29)
-        json_data = pd.DataFrame(f.loc["values"].item())
-        # Cycle through and remove data assigned to February 29th in non-leap years
-        years = json_index.year.unique()
-        for year in years:
-            if (year % 4 == 0) & ((year % 100 != 0) | (year % 400 == 0)):
-                continue
-            else:
-                feb29 = dt.datetime(year=year, month=3, day=1,tzinfo=timezone.utc)
-                try:
-                    feb29idx = json_index.get_loc(feb29)
-                    if feb29idx == 0:
-                        continue
-                    else:
-                        json_data = json_data.drop(feb29idx)
-                        if verbose==True:
-                            print("February 29th data for {} removed.".format(year))
-                except KeyError:
+                if tries <= 10:
+                    print(f"After {tries} tries, retrying...")
+                else:
                     continue
 
+            if "not found on this server" in csv_str:
+                print("Site URL incorrect.")
+                continue
+
+        csv_io = StringIO(csv_str)
+        f = pd.read_csv(csv_io,index_col=0)
+
+        # Create index of dates for available data for current site
+        df_index = pd.date_range(dt.datetime.strptime(f"{f.index[0]}-{int(f.columns[0])-1}","%m-%d-%Y"),
+                                   dt.datetime.today(),
+                                   freq="D",
+                                   tz='UTC')
+        # Create dataframe of available data (includes Feb 29)
+        snotel_in = pd.DataFrame(index=df_index)
+
         # Concatenate the cleaned data to the date index
-        snotel_in = pd.DataFrame(index=json_index)
-        snotel_in[var] = json_data.values
+        for year in f.columns:
+            try:
+                int(year)
+            except ValueError:
+                continue
+            # Remove missing columns...
+            year_data = f.loc[:,year].dropna()
+
+            # Fix index (will no longer include Feb 29 when missing)
+            year_index = list()
+            for i in year_data.index:
+                if int(i[:2])>=10:
+                    year_index.append(dt.datetime.strptime(f"{i}-{int(year)-1}","%m-%d-%Y"))
+                else:
+                    year_index.append(dt.datetime.strptime(f"{i}-{int(year)}", "%m-%d-%Y"))
+
+            year_data.index = pd.DatetimeIndex(year_index,tz="utc")
+
+            # Set appropriate rows in snotel_in
+            snotel_in.loc[year_data.index,var] = year_data
+
 
         # For precip, calculate incremental precip and remove negative values
         if var == "PREC":
-            if verbose==True:
+            if verbose == True:
                 print("Calculating incremental Precip.")
-            snotel_in["PREC"] = snotel_in[var]-snotel_in[var].shift(1)
-            snotel_in.loc[snotel_in["PREC"]<0,"PREC"] = 0
+            snotel_in["PREC"] = snotel_in[var] - snotel_in[var].shift(1)
+            snotel_in.loc[snotel_in["PREC"] < 0, "PREC"] = 0
 
+        # Add to dict
+        snotel_dict[var] = snotel_in
+
+    if verbose == True:
+        print("Checking dates")
+    begin = end = pd.to_datetime(dt.datetime.now()).tz_localize("UTC")
+    for key in snotel_dict.keys():
+        if snotel_dict[key].index.min() < begin:
+            begin = snotel_dict[key].index.min()
+        if snotel_dict[key].index.max() > end:
+            end = snotel_dict[key].index.max()
+
+    dates = pd.date_range(begin,end,freq="D",tz='UTC')
+    data = pd.DataFrame(index=dates)
+    data["site"] = site_triplet
+
+    if verbose == True:
+        print("Preparing output")
+    for key in snotel_dict.keys():
         # Merge to output dataframe
-        snotel_in = data.merge(snotel_in[var], left_index=True, right_index=True, how="left")
-        data[var] = snotel_in[var]
-        if verbose==True:
+        snotel_in = data.merge(snotel_dict[key][key], left_index=True, right_index=True, how="left")
+        data[key] = snotel_in[key]
+        if verbose == True:
             print("Added to dataframe")
 
-    # Return output dataframe
-    return(data)
+    return (data)
+
 
 def compose_date(years, months=1, days=1, weeks=None, hours=None, minutes=None,
                  seconds=None, milliseconds=None, microseconds=None, nanoseconds=None):
