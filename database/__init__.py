@@ -170,7 +170,7 @@ for g in usgs_gages.index:
 
 # Create list of SNOTEL sites & add colors
 snotel_sites = pd.read_csv(os.path.join(this_dir,"SNOTEL","snotel_sites.csv"))
-snotel_sites.index = snotel_sites.triplet
+snotel_sites.index = snotel_sites.name
 colors = color8
 while len(colors)<len(snotel_sites):
     colors = colors*2
@@ -180,7 +180,7 @@ snotel_sites["color"] = snotel_sites["prcp_color"] = colors[0:len(snotel_sites)]
 snotel_list = list()
 for s in snotel_sites.index:
     snotel_list.append({"label": str(snotel_sites.site_no[s]) + " " + snotel_sites.name[s] + " (" + str(
-        round(snotel_sites.elev_ft[s], 0)) + " ft)", "value": s})
+        round(snotel_sites.elev_ft[s], 0)) + " ft)", "value": f"{s}+{snotel_sites.loc[s,'state']}"})
 
 # Create list of CSAS sites & add colors
 csas_gages = pd.DataFrame()

@@ -38,12 +38,12 @@ COL_TYPES = {
 }
 
 # Define functions
-def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False):
+def import_snotel(site_duet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEFAULT_CSV_DIR,verbose=False):
     """Download NRCS SNOTEL data
 
     Parameters
     ---------
-        site_triplet: three part SNOTEL triplet (e.g., 713_CO_SNTL)
+        site_duet: site_name+state
         vars: array of variables for import (tested with WTEQ, SNWD, PREC, TAVG..other options may be available)
         out_dir: str to directory to save .csv...if None, will return df
         verbose: boolean
@@ -54,6 +54,10 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
         dataframe
 
     """
+    # Convert name to string, replacing spaces with %20
+    name = site_duet.split("+")[0].title().replace(" ", "%20")
+    state = site_duet.split("+")[1]
+
     # Create dictionary of variables
     snotel_dict = dict()
     ext = "DAILY"
@@ -62,7 +66,8 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
     for var in vars:
         if verbose == True:
             print("Importing {} data".format(var))
-        site_url = "https://www.nrcs.usda.gov/Internet/WCIS/sitedata/" + ext + "/" + var + "/" + site_triplet + ".json"
+        site_url = f"https://nwcc-apps.sc.egov.usda.gov/awdb/site-plots/POR/{var}/{state}/{name}.csv"
+        print(site_url)
         if verbose == True:
             print(site_url)
         failed = True
@@ -70,7 +75,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
         csv_str = ""
         while failed:
             try:
-                csv_str = r_get(site_url, timeout=1,verify=True).text
+                csv_str = r_get(site_url, timeout=5,verify=True).text
                 failed = False
             except (ConnectionError, TimeoutError,ReadTimeout,ReadTimeoutError) as error:
                 print(f"{error}")
@@ -85,33 +90,38 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
                 continue
 
         csv_io = StringIO(csv_str)
-        f = pd.read_json(csv_io, orient="index")
+        f = pd.read_csv(csv_io,index_col=0)
 
         # Create index of dates for available data for current site
-        json_index = pd.date_range(f.loc["beginDate"].item(), f.loc["endDate"].item(), freq="D", tz='UTC')
+        df_index = pd.date_range(dt.datetime.strptime(f"{f.index[0]}-{int(f.columns[0])-1}","%m-%d-%Y"),
+                                   dt.datetime.today(),
+                                   freq="D",
+                                   tz='UTC')
         # Create dataframe of available data (includes Feb 29)
-        json_data = pd.DataFrame(f.loc["values"].item())
-        # Cycle through and remove data assigned to February 29th in non-leap years
-        years = json_index.year.unique()
-        for year in years:
-            if (year % 4 == 0) & ((year % 100 != 0) | (year % 400 == 0)):
-                continue
-            else:
-                feb29 = dt.datetime(year=year, month=3, day=1, tzinfo=timezone.utc)
-                try:
-                    feb29idx = json_index.get_loc(feb29)
-                    if feb29idx == 0:
-                        continue
-                    else:
-                        json_data = json_data.drop(feb29idx)
-                        if verbose == True:
-                            print("February 29th data for {} removed.".format(year))
-                except KeyError:
-                    continue
+        snotel_in = pd.DataFrame(index=df_index)
 
         # Concatenate the cleaned data to the date index
-        snotel_in = pd.DataFrame(index=json_index)
-        snotel_in[var] = json_data.values
+        for year in f.columns:
+            try:
+                int(year)
+            except ValueError:
+                continue
+            # Remove missing columns...
+            year_data = f.loc[:,year].dropna()
+
+            # Fix index (will no longer include Feb 29 when missing)
+            year_index = list()
+            for i in year_data.index:
+                if int(i[:2])>=10:
+                    year_index.append(dt.datetime.strptime(f"{i}-{int(year)-1}","%m-%d-%Y"))
+                else:
+                    year_index.append(dt.datetime.strptime(f"{i}-{int(year)}", "%m-%d-%Y"))
+
+            year_data.index = pd.DatetimeIndex(year_index,tz="utc")
+
+            # Set appropriate rows in snotel_in
+            snotel_in.loc[year_data.index,var] = year_data
+
 
         # For precip, calculate incremental precip and remove negative values
         if var == "PREC":
@@ -134,7 +144,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
 
     dates = pd.date_range(begin,end,freq="D",tz='UTC')
     data = pd.DataFrame(index=dates)
-    data["site"] = site_triplet
+    data["site"] = site_duet
 
     if verbose == True:
         print("Preparing output")
@@ -150,7 +160,7 @@ def import_snotel(site_triplet,vars=["WTEQ", "SNWD", "PREC", "TAVG"],out_dir=DEF
     else:
         if os.path.isdir(out_dir) is False:
             os.mkdir(out_dir)
-        data.to_csv(Path(out_dir,f"{site_triplet}.csv"),index_label="date")
+        data.to_csv(Path(out_dir,f"{site_duet}.csv"),index_label="date")
 
 def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     """
@@ -312,11 +322,12 @@ if __name__ == '__main__':
     import argparse
 
     # Identify SNOTEL sites:
-    snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"))
+    snotel_sites = pd.read_csv(os.path.join(this_dir, "snotel_sites.csv"),index_col=0)
 
-    for site_triplet in snotel_sites.triplet:
-        print(site_triplet)
-        import_snotel(site_triplet)
+    for site in snotel_sites.index:
+        site_duet = f"{snotel_sites.loc[site,'name']}+{snotel_sites.loc[site,'state']}"
+        print(site_duet)
+        import_snotel(site_duet)
 
     # Arguments for db build
     args = parse_args()
