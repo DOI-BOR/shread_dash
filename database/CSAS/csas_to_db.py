@@ -235,8 +235,8 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
             # Fix albedo
             if (all(pd.isna(df_out["albedo"]))==True) and ("radup" in df_out.columns) and ("raddn" in df_out.columns):
                 df_out["albedo"] = df_out["raddn"] / df_out["radup"]
-                df_out.loc[df_out["albedo"]>1,'albedo'] = 1
-                df_out.loc[df_out["albedo"]<0,"albedo"] = 0
+                df_out.loc[df_out["albedo"]>=1,'albedo'] = np.nan
+                df_out.loc[df_out["albedo"]<=0,"albedo"] = np.nan
             if ("radup" in df_out.columns):
                 df_out = df_out.drop(labels=["radup"],axis=1)
             if ("raddn" in df_out.columns):
@@ -279,25 +279,25 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     print('  Success!!!\n')
     return {'csas_iv':df_csas_iv,'csas_dv':df_csas_dv}
 
-def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
-    """
-    Get unique dates from shread data, to ensure no duplicates
-    """
-    if not db_path.is_file():
-        return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
-    db_con_str = f'sqlite:///{db_path.as_posix()}'
-    eng = sql.create_engine(db_con_str)
-    with eng.connect() as con:
-        try:
-            unique_dates = pd.read_sql(
-                f'select distinct {date_field} from {tbl_name}',
-                con
-            ).dropna()
-        except Exception:
-            return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
-    return pd.to_datetime(unique_dates[date_field])
+# def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
+    # """
+    # Get unique dates from shread data, to ensure no duplicates
+    # """
+    # if not db_path.is_file():
+        # return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+    # db_con_str = f'sqlite:///{db_path.as_posix()}'
+    # eng = sql.create_engine(db_con_str)
+    # with eng.connect() as con:
+        # try:
+            # unique_dates = pd.read_sql(
+                # f'select distinct {date_field} from {tbl_name}',
+                # con
+            # ).dropna()
+        # except Exception:
+            # return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+    # return pd.to_datetime(unique_dates[date_field])
 
-def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
+def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='append', check_dups=True,
               zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
     """
     Write dataframe to database
@@ -326,9 +326,9 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=False,
         if if_exists == 'append' and check_dups:
             if verbose:
                 print(f'      Checking for duplicate data in {site}...')
-            unique_dates = get_unique_dates(site_id, db_path)
+            #unique_dates = get_unique_dates(site_id, db_path)
             initial_len = len(df_site.index)
-            df_site = df_site[~df_site[DEFAULT_DATE_FIELD].isin(unique_dates)]
+            df_site = df_site.drop_duplicates(subset=DEFAULT_DATE_FIELD)
             if verbose:
                 print(f'        Prevented {initial_len - len(df_site.index)} duplicates')
         if verbose:
