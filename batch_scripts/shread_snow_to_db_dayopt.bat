@@ -1,8 +1,8 @@
 @ECHO OFF
 TITLE Loading python environment...
-set root=C:\Users\tclarkin\AppData\Local\miniforge3
+set root=C:\Users\%USERNAME%\AppData\Local\miniforge3
 call %root%\Scripts\activate.bat
-set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread
+set env=C:\Users\%USERNAME%\AppData\Local\miniforge3\envs\shread
 call activate %env%
 
 TITLE Set dates for SHREAD Import...
@@ -34,7 +34,7 @@ GOTO postten
 	@ECHO OFF
 
 	TITLE Updating DB with new data...
-	set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
+	set env=C:\Users\%USERNAME%\AppData\Local\miniforge3\envs\shread_env
 	call activate %env%
 	cd %shread_dir%shread_dash\database\SHREAD\
 	@ECHO ON

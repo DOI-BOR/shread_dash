@@ -12,9 +12,9 @@ cd %shread_dir%\shread_wd\data\working\ndfd
 del * /q
 
 TITLE Loading python environment...
-set root=C:\Users\tclarkin\AppData\Local\miniforge3
+set root=C:\Users\%USERNAME%\AppData\Local\miniforge3
 call %root%\Scripts\activate.bat
-set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread
+set env=C:\Users\%USERNAME%\AppData\Local\miniforge3\envs\shread
 call activate %env%
 
 cd %shread_dir%shread_wd\
@@ -24,7 +24,7 @@ set start=%time%
 call python %shread_dir%shread/shread.py -i %shread_dir%shread/config/shread_config_shread_dash_nosky.ini -s 20220101 -e 20220101 -t D -p ndfd
 
 TITLE Updating DB with new data...
-set env=C:\Users\tclarkin\AppData\Local\miniforge3\envs\shread_env
+set env=C:\Users\%USERNAME%\AppData\Local\miniforge3\envs\shread_env
 call activate %env%
 cd %shread_dir%shread_dash\database\SHREAD\
 @ECHO ON

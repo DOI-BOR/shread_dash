@@ -235,8 +235,8 @@ def import_csas_live(site, start_date, end_date,dtype="dv",verbose=False):
     # Calculated Albedo (if not included)
     if "radup" in csas_df.columns:
         csas_df["albedo"] = csas_df["raddn"] / csas_df["radup"]
-        csas_df.loc[csas_df["albedo"]>1,'albedo'] = 1
-        csas_df.loc[csas_df["albedo"]<0,"albedo"] = 0
+        csas_df.loc[csas_df["albedo"]>=1,'albedo'] = np.nan
+        csas_df.loc[csas_df["albedo"]<=0,"albedo"] = np.nan
 
     # Clean snow depth
     if "snwd" in csas_df.columns:
