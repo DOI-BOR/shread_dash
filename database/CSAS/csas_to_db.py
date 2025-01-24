@@ -192,12 +192,32 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
                 if verbose:
                     print("Data not available")
                     return
+            
+            # Parse datetime column
+            if dtype=="iv":
+                datcol = "Datetime"
+                dtformat = "%Y-%m-%d %H:%M"
+            if dtype=="dv":
+                datcol = "Date"
+                dtformat = "%Y-%m-%d"
 
+            df_in["datetime"] = pd.to_datetime(df_in[datcol],format=dtformat)
+            print(df_in.head())
+            
+            # Check if datetimes were parsed
+            try:
+                df_in.dt.year
+            except AttributeError:
+                # if not...give error message and continue to next site
+                print(f"Date format is incorrect. Please check {site_url}")
+                continue
+                                
+            # Get year and dayofyear out of dt column
             if "Year" not in df_in.columns:
-                df_in["Year"] = dt.datetime.now().year
+                df_in["Year"] = df_in.datetime.year
 
             if "DOY" not in df_in.columns:
-                df_in["DOY"] = df_in.Day
+                df_in["DOY"] = df_in.datetime.dayofyear
 
             if dtype == "dv":
                 dates = compose_date(years=df_in.Year,days=df_in.DOY)
