@@ -201,12 +201,16 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
                 datcol = "Date"
                 dtformat = "%Y-%m-%d"
 
-            df_in["datetime"] = pd.to_datetime(df_in[datcol],format=dtformat)
-            print(df_in.head())
-            
+            # Drop 0000-00-00 rows
+            df_in = df_in.loc[df_in[datcol]!="0000-00-00",:]
+
+            # Convert dates
+            df_in.index = pd.to_datetime(df_in[datcol].values,format=dtformat)
+
             # Check if datetimes were parsed
             try:
-                df_in.dt.year
+                df_in.index.year
+                print("Tim didn't goof this time!")
             except AttributeError:
                 # if not...give error message and continue to next site
                 print(f"Date format is incorrect. Please check {site_url}")
@@ -214,10 +218,13 @@ def process_csas_live(data_dir=DEFAULT_CSV_DIR,verbose=False):
                                 
             # Get year and dayofyear out of dt column
             if "Year" not in df_in.columns:
-                df_in["Year"] = df_in.datetime.year
+                df_in["Year"] = df_in.index.year
 
             if "DOY" not in df_in.columns:
-                df_in["DOY"] = df_in.datetime.dayofyear
+                df_in["DOY"] = df_in.index.dayofyear
+
+            if "Hour" not in df_in.columns:
+                df_in["Hour"] = df_in.index.hour
 
             if dtype == "dv":
                 dates = compose_date(years=df_in.Year,days=df_in.DOY)
