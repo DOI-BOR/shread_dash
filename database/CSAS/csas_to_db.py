@@ -307,24 +307,24 @@ def get_dfs(data_dir=DEFAULT_CSV_DIR,verbose=False):
     return {'csas_iv':df_csas_iv,'csas_dv':df_csas_dv}
 
 # def get_unique_dates(tbl_name, db_path, date_field=DEFAULT_DATE_FIELD):
-    # """
-    # Get unique dates from shread data, to ensure no duplicates
-    # """
-    # if not db_path.is_file():
-        # return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
-    # db_con_str = f'sqlite:///{db_path.as_posix()}'
-    # eng = sql.create_engine(db_con_str)
-    # with eng.connect() as con:
-        # try:
-            # unique_dates = pd.read_sql(
-                # f'select distinct {date_field} from {tbl_name}',
-                # con
-            # ).dropna()
-        # except Exception:
-            # return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
-    # return pd.to_datetime(unique_dates[date_field])
+#     """
+#     Get unique dates from shread data, to ensure no duplicates
+#     """
+#     if not db_path.is_file():
+#         return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+#     db_con_str = f'sqlite:///{db_path.as_posix()}'
+#     eng = sql.create_engine(db_con_str)
+#     with eng.connect() as con:
+#         try:
+#             unique_dates = pd.read_sql(
+#                 f'select distinct {date_field} from {tbl_name}',
+#                 con
+#             ).dropna()
+#         except Exception:
+#             return pd.DataFrame(columns=[DEFAULT_DATE_FIELD])
+#     return pd.to_datetime(unique_dates[date_field])
 
-def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='append', check_dups=True,
+def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='replace', check_dups=True,
               zip_db=ZIP_IT, zip_frmt=ZIP_FRMT, verbose=False):
     """
     Write dataframe to database
@@ -355,7 +355,7 @@ def write_db(df, db_path=DEFAULT_DB_DIR, if_exists='append', check_dups=True,
                 print(f'      Checking for duplicate data in {site}...')
             #unique_dates = get_unique_dates(site_id, db_path)
             initial_len = len(df_site.index)
-            df_site = df_site.drop_duplicates(subset=DEFAULT_DATE_FIELD)
+            df_site = df_site.drop_duplicates(subset=DEFAULT_DATE_FIELD,keep="last")
             if verbose:
                 print(f'        Prevented {initial_len - len(df_site.index)} duplicates')
         if verbose:
@@ -410,7 +410,7 @@ def parse_args():
         "-e", "--exists", 
         help="behavior if database table exists already",
         choices=['replace','append','fail'],
-        default='append'
+        default='replace'
     )
     parser.add_argument(
         "-c", "--check_dups", 
