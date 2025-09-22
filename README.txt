@@ -43,11 +43,11 @@ Follow these steps if this is your first installation of the dashboard.
 	The repositories have the following URLs and Local Path locations:
 
 	shread_dash repository:
-		URL: https://github.com/usbr/shread_dash
+		URL: https://github.com/DOI-BOR/shread_dash
 		Local Path: C:/Programs (Should result in path: C:/Programs/shread_dash)
 		
 	shread repository:
-		URL: https://github.com/usbr/shread
+		URL: https://github.com/DOI-BOR/shread
 		Local Path: C:/Programs (Should result in path: C:/Programs/shread)
 
 	Do one of the following for both repositories:
