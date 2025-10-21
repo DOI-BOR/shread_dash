@@ -1,4 +1,4 @@
-Last Updated: 2022-05-27
+Last Updated: 2025-10-21
 
 README for:
 Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py)
@@ -86,6 +86,7 @@ Follow these steps if this is your first installation of the dashboard.
 			resources/gis
 		
 		To C:Programs/shread_wd, copy shread_config_shread_dash.ini from C:/Programs/shread/config
+		To C:Programs/shread_wd, copy shread_config_shread_dash_nosky.ini from C:/Programs/shread/config
 		To C:/Programs/shread_wd/resources/gis, copy the two .geojson files found in C:/Programs/shread_dash/resources
 		
 	C. Configure bat files
@@ -93,9 +94,11 @@ Follow these steps if this is your first installation of the dashboard.
 			C:/Programs/shread_dash/dasboard_deploy.bat (line 3 and 5)
 			All files in C:/Programs/shread_dash/batch_scripts/
 			
-		This can easily be done using Notepad++. Open all files. Hold Ctrl+H.
+		By default it will assumed the environemnts are located here: C:\Users\{your username}\AppData\Local\miniforge3
+		If this is not the case, this can easily be done using Notepad++. 
+		Open all files. Hold Ctrl+H.
 			In "Find What" enter: C:\Users\tclarkin\AppData\Local\miniforge3
-			In "Replace" with enter: C:\Users\{your username}\AppData\Local\miniforge3
+			In "Replace" with enter: C:\Users\{your username}\AppData\Local\miniforge3 (or whatever the new path is)
 			Click "Replace All in All Opened Documents"
 			Save All.
 			
