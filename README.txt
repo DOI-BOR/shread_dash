@@ -1,7 +1,9 @@
-Last Updated: 2025-10-21
+Last Updated: 2025-11-13
 
 README for:
 Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py)
+
+Contact tclarkin@usbr.gov with questions
 
 This repository contains a series of batch scripts and python codes to run the Snow-Hydrology Repo for Evaluation, 
 Analysis, and Decision-making Dashboard (or "SHREAD Dash"). SHREAD plot has two main components: the database and

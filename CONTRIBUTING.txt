@@ -1,0 +1,7 @@
+Last Updated: 2025-11-13
+
+CONTRIBUTING for:
+Snow-Hydrology Repo for Evaluation, Analysis, and Decision-making Dashboard (shread_dash.py)
+
+Include clear description of changes in commit.
+All contributions will be reviewed prior to merge.
